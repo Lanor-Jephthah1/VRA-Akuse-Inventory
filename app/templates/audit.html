@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+  <div>
+    <h1 class="text-lg font-semibold text-slate-900 tracking-tight">Stock Movement Ledger (SRV / SIV)</h1>
+    <p class="text-xs text-slate-500 mt-0.5">
+      Chronological audit trail of store receipts, requisitions issued, and equipment returns.
+    </p>
+  </div>
+  <div>
+    <a href="/export/transactions.csv" class="h-8 inline-flex items-center px-3 rounded-md bg-white border border-slate-300 hover:bg-slate-50 text-xs font-medium text-slate-700 shadow-sm transition">
+      Export Ledger (.csv)
+    </a>
+  </div>
+</div>
+
+<div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="border-b border-slate-200 text-[11px] font-medium text-slate-500 bg-slate-50/60">
+          <th class="py-2.5 px-4">Timestamp</th>
+          <th class="py-2.5 px-4">Voucher No.</th>
+          <th class="py-2.5 px-4">Type</th>
+          <th class="py-2.5 px-4">Item</th>
+          <th class="py-2.5 px-4 text-right">Delta</th>
+          <th class="py-2.5 px-4 text-right">Balance</th>
+          <th class="py-2.5 px-4">Counterparty &amp; Reference</th>
+          <th class="py-2.5 px-4">Officer</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200/70 text-xs">
+        {% for tx in transactions %}
+        <tr class="hover:bg-slate-50/80">
+          <td class="py-2.5 px-4 text-slate-500 whitespace-nowrap tabular-nums">
+            {{ tx.created_at.strftime('%Y-%m-%d %H:%M') }}
+          </td>
+          <td class="py-2.5 px-4 font-mono font-medium text-slate-900 whitespace-nowrap">
+            {{ tx.voucher_no }}
+          </td>
+          <td class="py-2.5 px-4 whitespace-nowrap">
+            <span class="font-mono text-[11px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+              {{ tx.transaction_type }}
+            </span>
+          </td>
+          <td class="py-2.5 px-4">
+            <span class="font-medium text-slate-900">{{ tx.item.name }}</span>
+            <span class="text-slate-400 font-mono text-[11px] ml-1">({{ tx.item.item_code }})</span>
+          </td>
+          <td class="py-2.5 px-4 text-right tabular-nums font-semibold {% if tx.quantity_change > 0 %}text-emerald-700{% else %}text-slate-900{% endif %}">
+            {% if tx.quantity_change > 0 %}+{{ tx.quantity_change }}{% else %}{{ tx.quantity_change }}{% endif %}
+          </td>
+          <td class="py-2.5 px-4 text-right tabular-nums text-slate-600">
+            {{ tx.balance_after }} {{ tx.item.unit }}
+          </td>
+          <td class="py-2.5 px-4 text-slate-600">
+            <div class="font-medium text-slate-800">{{ tx.recipient_or_supplier }}</div>
+            {% if tx.reference_note %}
+              <div class="text-[11px] text-slate-400 mt-0.5">{{ tx.reference_note }}</div>
+            {% endif %}
+          </td>
+          <td class="py-2.5 px-4 text-slate-500 whitespace-nowrap">
+            {{ tx.performed_by.full_name }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

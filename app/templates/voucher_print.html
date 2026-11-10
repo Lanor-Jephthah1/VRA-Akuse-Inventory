@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  {% set pdf_filename = "VRA_Akuse_" ~ req.siv_number ~ "_" ~ req.department.code ~ "_" ~ req.requester.staff_id ~ "_" ~ req.requested_at.strftime('%Y-%m-%d') %}
+  <title>{{ pdf_filename }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 12mm;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; padding: 0 !important; }
+      .print-sheet { border-width: 1.5px !important; box-shadow: none !important; max-width: 100% !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 py-4 sm:py-8 px-2 sm:px-4">
+
+  <!-- Action Bar (Hidden when printing) -->
+  <div class="max-w-3xl mx-auto mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print bg-white border border-slate-200 p-3 sm:px-4 sm:py-3 rounded-lg shadow-sm">
+    <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+      <a href="/requisitions" class="text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-md transition-colors">
+        &larr; Back to Requisitions
+      </a>
+      <div class="text-[11px] sm:text-xs text-slate-500 truncate">
+        Auto PDF: <span class="font-mono font-semibold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{{ pdf_filename }}.pdf</span>
+      </div>
+    </div>
+    <button onclick="printVoucher()" class="w-full sm:w-auto bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold px-4 py-2 rounded-md shadow-sm transition-colors text-center">
+      Print SIV / Save PDF
+    </button>
+  </div>
+
+  <script>
+    function printVoucher() {
+      document.title = "{{ pdf_filename }}";
+      window.print();
+    }
+  </script>
+
+  <!-- Printable Voucher Sheet -->
+  <div class="print-sheet max-w-3xl mx-auto bg-white border sm:border-2 border-slate-800 rounded-lg p-4 sm:p-8 shadow-md">
+    <!-- Top Header -->
+    <div class="flex flex-col sm:flex-row sm:items-start justify-between border-b sm:border-b-2 border-slate-800 pb-4 gap-4">
+      <div class="flex items-center gap-3 sm:gap-4">
+        <img src="/static/vra_logo.png" alt="Volta River Authority Logo" class="h-10 sm:h-14 w-auto object-contain" />
+        <div class="border-l border-slate-300 pl-3 sm:pl-4">
+          <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-slate-900 uppercase">Volta River Authority, Akuse</h1>
+          <p class="text-[11px] sm:text-xs font-semibold text-slate-700">Kpong Generating Station • MIS &amp; Technical Stores</p>
+          <p class="text-[10px] sm:text-xs text-slate-500">Official Departmental Inventory &amp; Asset Control</p>
+        </div>
+      </div>
+      <div class="text-left sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200">
+        <div class="inline-block bg-slate-900 text-white text-[10px] sm:text-xs font-bold uppercase px-2.5 py-1 rounded">
+          Stores Issue Voucher (SIV)
+        </div>
+        <div class="font-mono text-sm sm:text-base font-extrabold text-slate-900 mt-1">{{ req.siv_number }}</div>
+        <div class="text-[11px] sm:text-xs text-slate-500">Date: {{ req.requested_at.strftime('%d %b %Y') }}</div>
+      </div>
+    </div>
+
+    <!-- Metadata Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-3 sm:py-4 border-b border-slate-300 text-xs">
+      <div>
+        <div class="text-slate-500 uppercase font-semibold text-[10px]">Requesting Staff:</div>
+        <div class="text-xs sm:text-sm font-bold text-slate-900 mt-0.5">{{ req.requester.full_name }}</div>
+        <div class="text-slate-600 text-[11px]">Staff ID: <strong>{{ req.requester.staff_id }}</strong> ({{ req.requester.job_title }})</div>
+      </div>
+      <div>
+        <div class="text-slate-500 uppercase font-semibold text-[10px]">Department &amp; Location:</div>
+        <div class="text-xs sm:text-sm font-bold text-slate-900 mt-0.5">[{{ req.department.code }}] {{ req.department.name }}</div>
+        <div class="text-slate-600 text-[11px]">Work Order / Job Ref: <strong>{{ req.job_card_ref or 'Standard Departmental Request' }}</strong></div>
+      </div>
+    </div>
+
+    <!-- Line Item Table -->
+    <div class="my-4 sm:my-6 overflow-x-auto">
+      <table class="w-full border-collapse border border-slate-800 text-xs min-w-[500px]">
+        <thead>
+          <tr class="bg-slate-100 border-b border-slate-800 text-slate-800 uppercase text-[10px] sm:text-xs">
+            <th class="border-r border-slate-800 py-2 sm:py-2.5 px-2.5 sm:px-3 text-left">Item Code</th>
+            <th class="border-r border-slate-800 py-2 sm:py-2.5 px-2.5 sm:px-3 text-left">Item Description &amp; Asset Tag</th>
+            <th class="border-r border-slate-800 py-2 sm:py-2.5 px-2.5 sm:px-3 text-center">Class</th>
+            <th class="border-r border-slate-800 py-2 sm:py-2.5 px-2.5 sm:px-3 text-center">Qty Issued</th>
+            <th class="py-2 sm:py-2.5 px-2.5 sm:px-3 text-left">Store Bin</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="border-r border-slate-800 py-3 sm:py-4 px-2.5 sm:px-3 font-mono font-bold align-top">{{ req.item.item_code }}</td>
+            <td class="border-r border-slate-800 py-3 sm:py-4 px-2.5 sm:px-3 align-top">
+              <div class="font-bold text-slate-900 text-xs sm:text-sm">{{ req.item.name }}</div>
+              <div class="text-slate-600 text-[11px] mt-0.5">
+                Model: {{ req.item.brand_model or 'N/A' }} | S/N: {{ req.item.serial_or_part_no or 'N/A' }}
+                {% if req.item.vra_asset_tag %} | Asset Tag: <strong>{{ req.item.vra_asset_tag }}</strong>{% endif %}
+              </div>
+              <div class="mt-2 pt-2 border-t border-slate-200">
+                <span class="font-bold uppercase text-[9px] sm:text-[10px] text-slate-500 tracking-wider">Reason for Request / Operational Use:</span>
+                <div class="text-slate-900 font-medium text-xs mt-0.5">{{ req.purpose }}</div>
+              </div>
+              {% if req.is_returnable %}
+                <div class="mt-2 inline-block px-2 py-0.5 rounded border border-slate-800 bg-slate-100 font-bold text-[10px] sm:text-[11px] text-slate-900">
+                  RETURNABLE ASSET LOAN (Expected Return: {{ req.expected_return_date or 'Upon completion of work' }})
+                </div>
+              {% endif %}
+            </td>
+            <td class="border-r border-slate-800 py-3 sm:py-4 px-2.5 sm:px-3 text-center font-semibold align-top">{{ req.item.item_type }}</td>
+            <td class="border-r border-slate-800 py-3 sm:py-4 px-2.5 sm:px-3 text-center font-extrabold text-sm sm:text-base align-top">{{ req.quantity }} {{ req.item.unit }}</td>
+            <td class="py-3 sm:py-4 px-2.5 sm:px-3 align-top">{{ req.item.store_location }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Approval & Sign-off Section -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-slate-300 text-xs">
+      <div class="border border-slate-300 rounded p-2.5 sm:p-3">
+        <div class="font-bold uppercase text-slate-500 text-[9px] sm:text-[10px]">1. Requested By (Staff)</div>
+        <div class="font-bold text-slate-900 mt-1.5 text-xs">{{ req.requester.full_name }}</div>
+        <div class="text-slate-500 text-[11px]">{{ req.requester.staff_id }}</div>
+        <div class="mt-3 sm:mt-4 pt-2 border-t border-dashed border-slate-300 text-[10px] sm:text-[11px] text-slate-500">
+          Date: {{ req.requested_at.strftime('%d %b %Y, %H:%M') }}
+        </div>
+      </div>
+
+      <div class="border border-slate-300 rounded p-2.5 sm:p-3">
+        <div class="font-bold uppercase text-slate-500 text-[9px] sm:text-[10px]">2. Authorized By (Supervisor)</div>
+        {% if req.approved_by %}
+          <div class="font-bold text-slate-900 mt-1.5 text-xs">{{ req.approved_by.full_name }}</div>
+          <div class="text-slate-500 text-[11px]">{{ req.approved_by.job_title }}</div>
+          <div class="mt-3 sm:mt-4 pt-2 border-t border-dashed border-slate-300 text-[10px] sm:text-[11px] text-slate-800 font-semibold">
+            {{ req.status }} ({{ req.approved_at.strftime('%d %b %Y') if req.approved_at else '' }})
+          </div>
+        {% else %}
+          <div class="mt-2 text-slate-600 font-semibold text-xs">Pending Supervisor Signature</div>
+          <div class="mt-4 sm:mt-6 pt-2 border-t border-dashed border-slate-300 text-[10px] sm:text-[11px] text-slate-400">Signature &amp; Date</div>
+        {% endif %}
+      </div>
+
+      <div class="border border-slate-300 rounded p-2.5 sm:p-3">
+        <div class="font-bold uppercase text-slate-500 text-[9px] sm:text-[10px]">3. Issued By (Store / NSS Officer)</div>
+        {% if req.issued_by %}
+          <div class="font-bold text-slate-900 mt-1.5 text-xs">{{ req.issued_by.full_name }}</div>
+          <div class="text-slate-500 text-[11px]">{{ req.issued_by.staff_id }}</div>
+          <div class="mt-3 sm:mt-4 pt-2 border-t border-dashed border-slate-300 text-[10px] sm:text-[11px] text-slate-800 font-semibold">
+            ISSUED: {{ req.issued_at.strftime('%d %b %Y, %H:%M') if req.issued_at else '' }}
+          </div>
+        {% else %}
+          <div class="mt-2 text-slate-500 text-xs">Awaiting Store Issuance</div>
+          <div class="mt-4 sm:mt-6 pt-2 border-t border-dashed border-slate-300 text-[10px] sm:text-[11px] text-slate-400">Store Officer Signature</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="mt-4 sm:mt-6 pt-2 sm:pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between text-[10px] sm:text-[11px] text-slate-400 gap-1">
+      <span>Generated by VRA Akuse MIS &amp; Stores Inventory System</span>
+      <span>Printed: {{ printed_at }}</span>
+    </div>
+  </div>
+
+</body>
+</html>

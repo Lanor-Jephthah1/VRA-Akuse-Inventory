@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Header & Database Backup Button -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+  <div>
+    <h1 class="text-lg font-semibold text-slate-900 tracking-tight">MIS System Administration</h1>
+    <p class="text-xs text-slate-500 mt-0.5">
+      Restricted to MIS Supervisors. Manage user access roles, reconcile physical stock counts, and export database backups.
+    </p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <button
+      type="button"
+      onclick="document.getElementById('newDeptModal').classList.remove('hidden')"
+      class="h-8 inline-flex items-center px-3 rounded-md bg-white border border-slate-300 hover:bg-slate-50 text-xs font-medium text-slate-700 shadow-sm transition"
+    >
+      + Add Department
+    </button>
+    <button
+      type="button"
+      onclick="document.getElementById('addStaffAdminModal').classList.remove('hidden')"
+      class="h-8 inline-flex items-center px-3 rounded-md bg-white border border-slate-300 hover:bg-slate-50 text-xs font-medium text-slate-700 shadow-sm transition"
+    >
+      + Register User
+    </button>
+    <a
+      href="/admin/backup-db"
+      class="h-8 inline-flex items-center gap-1.5 px-3 rounded-md bg-[#00529B] hover:bg-[#003d75] text-xs font-medium text-white shadow-sm transition"
+    >
+      <span>Download DB Backup ({{ db_size_kb }} KB)</span>
+    </a>
+  </div>
+</div>
+
+<!-- Neutral 4-Column Metric Strip (No Colored Top Lines) -->
+<div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 mb-6">
+  <div class="p-4">
+    <div class="text-xs font-medium text-slate-500">Registered Personnel</div>
+    <div class="mt-1.5 flex items-baseline justify-between">
+      <span class="text-2xl font-semibold text-slate-900 tabular-nums" data-count="{{ all_users|length }}">{{ all_users|length }}</span>
+      <span class="text-xs text-slate-400">Accounts</span>
+    </div>
+  </div>
+  <div class="p-4">
+    <div class="text-xs font-medium text-slate-500">VRA Akuse Departments</div>
+    <div class="mt-1.5 flex items-baseline justify-between">
+      <span class="text-2xl font-semibold text-slate-900 tabular-nums" data-count="{{ dept_list|length }}">{{ dept_list|length }}</span>
+      <span class="text-xs text-slate-400">Units</span>
+    </div>
+  </div>
+  <div class="p-4">
+    <div class="text-xs font-medium text-slate-500">Total Requisitions</div>
+    <div class="mt-1.5 flex items-baseline justify-between">
+      <span class="text-2xl font-semibold text-slate-900 tabular-nums" data-count="{{ total_reqs }}">{{ total_reqs }}</span>
+      <span class="text-xs text-slate-400">SIV vouchers</span>
+    </div>
+  </div>
+  <div class="p-4">
+    <div class="text-xs font-medium text-slate-500">Audit Ledger Entries</div>
+    <div class="mt-1.5 flex items-baseline justify-between">
+      <span class="text-2xl font-semibold text-slate-900 tabular-nums" data-count="{{ total_tx }}">{{ total_tx }}</span>
+      <span class="text-xs text-slate-400">Transactions</span>
+    </div>
+  </div>
+</div>
+
+<!-- Section 1: User Role, Department & Access Control (Compact, No Horizontal Clipping) -->
+<div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden mb-6">
+  <div class="px-4 py-3 border-b border-slate-200">
+    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-700">User Access Control &amp; Role Management</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="border-b border-slate-200 text-[11px] font-medium text-slate-500 bg-slate-50/60">
+          <th class="py-2.5 px-3">Staff ID</th>
+          <th class="py-2.5 px-3">Personnel</th>
+          <th class="py-2.5 px-3">Dept</th>
+          <th class="py-2.5 px-3">Role</th>
+          <th class="py-2.5 px-3">Status</th>
+          <th class="py-2.5 px-3">Reset Password</th>
+          <th class="py-2.5 px-3 text-right"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200/70 text-xs">
+        {% for u in all_users %}
+        <tr class="hover:bg-slate-50/80">
+          <form action="/admin/user/{{ u.id }}/update" method="post">
+            <td class="py-2.5 px-3 font-mono font-medium text-slate-900 whitespace-nowrap">
+              {{ u.staff_id }}
+            </td>
+            <td class="py-2.5 px-3">
+              <div class="font-medium text-slate-900">{{ u.full_name }}</div>
+              <div class="text-[11px] text-slate-400">{{ u.job_title }}</div>
+            </td>
+            <td class="py-2.5 px-3">
+              <select name="department_id" class="h-7 rounded border border-slate-300 bg-white px-2 text-xs text-slate-700">
+                {% for d in departments %}
+                  <option value="{{ d.id }}" {% if u.department_id == d.id %}selected{% endif %}>{{ d.code }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td class="py-2.5 px-3">
+              <select name="role" class="h-7 rounded border border-slate-300 bg-white px-2 text-xs font-medium text-slate-800">
+                <option value="STAFF" {% if u.role == 'STAFF' %}selected{% endif %}>Staff</option>
+                <option value="STORE_OFFICER" {% if u.role == 'STORE_OFFICER' %}selected{% endif %}>Store Officer</option>
+                <option value="SUPERVISOR" {% if u.role == 'SUPERVISOR' %}selected{% endif %}>Supervisor</option>
+              </select>
+            </td>
+            <td class="py-2.5 px-3">
+              <select name="is_active" class="h-7 rounded border border-slate-300 bg-white px-2 text-xs text-slate-700">
+                <option value="true" {% if u.is_active %}selected{% endif %}>Active</option>
+                <option value="false" {% if not u.is_active %}selected{% endif %}>Disabled</option>
+              </select>
+            </td>
+            <td class="py-2.5 px-3">
+              <input
+                type="password"
+                name="new_password"
+                placeholder="New pass..."
+                class="h-7 w-24 rounded border border-slate-300 px-2 text-xs placeholder:text-slate-400"
+              />
+            </td>
+            <td class="py-2.5 px-3 text-right whitespace-nowrap">
+              <button type="submit" class="h-7 px-2.5 rounded bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-medium transition">
+                Save
+              </button>
+            </td>
+          </form>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Section 2: Physical Stocktake Reconciliation -->
+<div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden">
+  <div class="px-4 py-3 border-b border-slate-200">
+    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-700">Physical Stocktake &amp; Reorder Thresholds</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="border-b border-slate-200 text-[11px] font-medium text-slate-500 bg-slate-50/60">
+          <th class="py-2.5 px-3">Code</th>
+          <th class="py-2.5 px-3">Item Description</th>
+          <th class="py-2.5 px-3">Shelf / Bin</th>
+          <th class="py-2.5 px-3">Condition</th>
+          <th class="py-2.5 px-3">Qty</th>
+          <th class="py-2.5 px-3">Min</th>
+          <th class="py-2.5 px-3">Audit Note</th>
+          <th class="py-2.5 px-3 text-right"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200/70 text-xs">
+        {% for item in items %}
+        <tr class="hover:bg-slate-50/80">
+          <form action="/admin/item/{{ item.id }}/adjust" method="post">
+            <td class="py-2.5 px-3 font-mono font-medium text-slate-900 whitespace-nowrap">
+              {{ item.item_code }}
+            </td>
+            <td class="py-2.5 px-3">
+              <div class="font-medium text-slate-900">{{ item.name }}</div>
+              <div class="text-[11px] text-slate-400">{{ item.owning_department.code if item.owning_department else 'GEN' }} • {{ item.unit }}</div>
+            </td>
+            <td class="py-2.5 px-3">
+              <input
+                type="text"
+                name="store_location"
+                value="{{ item.store_location }}"
+                class="h-7 w-36 rounded border border-slate-300 px-2 text-xs text-slate-800"
+              />
+            </td>
+            <td class="py-2.5 px-3">
+              <select name="condition" class="h-7 rounded border border-slate-300 bg-white px-2 text-xs text-slate-700">
+                <option value="New / Good" {% if item.condition == 'New / Good' %}selected{% endif %}>New / Good</option>
+                <option value="Fair" {% if item.condition == 'Fair' %}selected{% endif %}>Fair</option>
+                <option value="Faulty" {% if item.condition == 'Faulty' %}selected{% endif %}>Faulty</option>
+                <option value="Under Repair" {% if item.condition == 'Under Repair' %}selected{% endif %}>Under Repair</option>
+              </select>
+            </td>
+            <td class="py-2.5 px-3">
+              <input
+                type="number"
+                name="physical_qty"
+                value="{{ item.quantity_on_hand }}"
+                min="0"
+                class="h-7 w-16 rounded border border-slate-300 px-2 text-xs font-semibold text-slate-900 tabular-nums"
+              />
+            </td>
+            <td class="py-2.5 px-3">
+              <input
+                type="number"
+                name="reorder_level"
+                value="{{ item.reorder_level }}"
+                min="0"
+                class="h-7 w-16 rounded border border-slate-300 px-2 text-xs text-slate-700 tabular-nums"
+              />
+            </td>
+            <td class="py-2.5 px-3">
+              <input
+                type="text"
+                name="reason"
+                placeholder="Reason..."
+                class="h-7 w-32 rounded border border-slate-300 px-2 text-xs placeholder:text-slate-400"
+              />
+            </td>
+            <td class="py-2.5 px-3 text-right whitespace-nowrap">
+              <button type="submit" class="h-7 px-2.5 rounded bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-medium transition">
+                Save
+              </button>
+            </td>
+          </form>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal 1: Add New Department -->
+<div id="newDeptModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-xl max-w-md w-full overflow-hidden">
+    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-slate-900">Add VRA Akuse Department</h3>
+      <button type="button" onclick="document.getElementById('newDeptModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
+    </div>
+    <form action="/admin/department/add" method="post" class="p-5 space-y-3.5 text-xs">
+      <div class="grid grid-cols-3 gap-3">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Dept Code</label>
+          <input type="text" name="code" required placeholder="e.g. SEC" class="w-full h-8 rounded-md border border-slate-300 px-2.5 uppercase" />
+        </div>
+        <div class="col-span-2">
+          <label class="block font-medium text-slate-700 mb-1">Department Name</label>
+          <input type="text" name="name" required placeholder="e.g. Corporate Security" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+      </div>
+      <div>
+        <label class="block font-medium text-slate-700 mb-1">Location</label>
+        <input type="text" name="location" value="Kpong GS, Akuse" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+      </div>
+      <div>
+        <label class="block font-medium text-slate-700 mb-1">Head of Department / Supervisor</label>
+        <input type="text" name="head_of_dept" placeholder="e.g. Mr. Kofi Boateng" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+      </div>
+      <div class="pt-2 flex justify-end gap-2">
+        <button type="button" onclick="document.getElementById('newDeptModal').classList.add('hidden')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
+        <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] text-white font-medium">Create Department</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 2: Register User from Admin -->
+<div id="addStaffAdminModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-xl max-w-md w-full overflow-hidden">
+    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-slate-900">Register Staff / NSS Personnel</h3>
+      <button type="button" onclick="document.getElementById('addStaffAdminModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
+    </div>
+    <form action="/staff/add" method="post" class="p-5 space-y-3 text-xs">
+      <input type="hidden" name="redirect_to" value="/admin" />
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Staff / NSS ID</label>
+          <input type="text" name="staff_id" required placeholder="VRA-AK-3401" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">System Role</label>
+          <select name="role" class="w-full h-8 rounded-md border border-slate-300 px-2 bg-white">
+            <option value="STAFF">Staff</option>
+            <option value="STORE_OFFICER">Store Officer (NSS)</option>
+            <option value="SUPERVISOR">Supervisor (Admin)</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block font-medium text-slate-700 mb-1">Full Name</label>
+        <input type="text" name="full_name" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Official Email</label>
+          <input type="email" name="email" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Initial Password</label>
+          <input type="text" name="password_plain" value="vra123" required class="w-full h-8 rounded-md border border-slate-300 px-2.5 font-mono" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Department</label>
+          <select name="department_id" class="w-full h-8 rounded-md border border-slate-300 px-2 bg-white">
+            {% for d in departments %}
+              <option value="{{ d.id }}">{{ d.name }} ({{ d.code }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Job Title</label>
+          <input type="text" name="job_title" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+      </div>
+      <div class="pt-2 flex justify-end gap-2">
+        <button type="button" onclick="document.getElementById('addStaffAdminModal').classList.add('hidden')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
+        <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] text-white font-medium">Create Account</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

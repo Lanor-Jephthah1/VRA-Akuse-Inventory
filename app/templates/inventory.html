@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Header & Action Buttons -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+  <div>
+    <h1 class="text-lg font-semibold text-slate-900 tracking-tight">Inventory Catalog</h1>
+    <p class="text-xs text-slate-500 mt-0.5">
+      Consumables, spare parts, and serialized fixed assets across VRA Akuse stores.
+    </p>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="/export/inventory.csv" class="h-8 inline-flex items-center px-3 rounded-md bg-white border border-slate-300 hover:bg-slate-50 text-xs font-medium text-slate-700 shadow-sm transition">
+      Export CSV
+    </a>
+    {% if current_user.role in ['STORE_OFFICER', 'SUPERVISOR'] %}
+    <button
+      type="button"
+      onclick="document.getElementById('srvModal').classList.remove('hidden')"
+      class="h-8 inline-flex items-center px-3 rounded-md bg-white border border-slate-300 hover:bg-slate-50 text-xs font-medium text-slate-800 shadow-sm transition"
+    >
+      + Receive Stock (SRV)
+    </button>
+    <button
+      type="button"
+      onclick="document.getElementById('newItemModal').classList.remove('hidden')"
+      class="h-8 inline-flex items-center px-3 rounded-md bg-[#00529B] hover:bg-[#003f7a] text-xs font-medium text-white shadow-sm transition"
+    >
+      + New Catalog Item
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Unified Card: Integrated Filter Toolbar + Data Table -->
+<div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden">
+
+  <!-- Integrated Table Toolbar -->
+  <form method="get" action="/inventory" class="p-3 border-b border-slate-200 bg-slate-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+    <div class="relative flex-1 max-w-md">
+      <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input
+        type="text"
+        name="q"
+        value="{{ q }}"
+        placeholder="Search code, item name, serial, or asset tag..."
+        class="w-full h-8 rounded-md border border-slate-300 bg-white pl-8 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#00529B]"
+      />
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <select
+        name="dept"
+        onchange="this.form.submit()"
+        class="h-8 rounded-md border border-slate-300 px-2.5 text-xs text-slate-700 bg-white hover:border-slate-400 focus:outline-none focus:border-[#00529B] cursor-pointer"
+      >
+        <option value="">All Departments</option>
+        {% for d in departments %}
+          <option value="{{ d.code }}" {% if selected_dept == d.code %}selected{% endif %}>{{ d.name }} ({{ d.code }})</option>
+        {% endfor %}
+      </select>
+
+      <select
+        name="item_type"
+        onchange="this.form.submit()"
+        class="h-8 rounded-md border border-slate-300 px-2.5 text-xs text-slate-700 bg-white hover:border-slate-400 focus:outline-none focus:border-[#00529B] cursor-pointer"
+      >
+        <option value="">All Classifications</option>
+        <option value="CONSUMABLE" {% if selected_type == 'CONSUMABLE' %}selected{% endif %}>Consumables</option>
+        <option value="ASSET" {% if selected_type == 'ASSET' %}selected{% endif %}>Fixed Assets</option>
+      </select>
+
+      {% if q or selected_dept or selected_type or stock_filter %}
+      <a href="/inventory" class="h-8 inline-flex items-center px-2.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-xs font-medium text-slate-600">
+        Reset
+      </a>
+      {% endif %}
+    </div>
+  </form>
+
+  <!-- Data Table -->
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="border-b border-slate-200 text-[11px] font-medium text-slate-500 bg-slate-50/70">
+          <th class="py-2.5 px-4">Code</th>
+          <th class="py-2.5 px-4">Item Description</th>
+          <th class="py-2.5 px-4">Dept</th>
+          <th class="py-2.5 px-4">Store Location</th>
+          <th class="py-2.5 px-4 text-right">Stock Balance</th>
+          <th class="py-2.5 px-4">Availability</th>
+          <th class="py-2.5 px-4 text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200/70 text-xs">
+        {% for item in items %}
+        <tr class="hover:bg-slate-50/80 group">
+          <td class="py-3 px-4 align-middle whitespace-nowrap">
+            <div class="font-mono font-medium text-slate-900">{{ item.item_code }}</div>
+            {% if item.vra_asset_tag %}
+              <div class="font-mono text-[10px] text-slate-400 mt-0.5">{{ item.vra_asset_tag }}</div>
+            {% endif %}
+          </td>
+          <td class="py-3 px-4 align-middle">
+            <div class="font-medium text-slate-900">{{ item.name }}</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">
+              {{ item.brand_model or 'Standard' }}
+              {% if item.serial_or_part_no %} • S/N: {{ item.serial_or_part_no }}{% endif %}
+            </div>
+          </td>
+          <td class="py-3 px-4 align-middle whitespace-nowrap">
+            <span class="font-mono text-[11px] font-medium text-slate-600 bg-slate-100 border border-slate-200/80 px-1.5 py-0.5 rounded">
+              {{ item.owning_department.code if item.owning_department else 'GEN' }}
+            </span>
+          </td>
+          <td class="py-3 px-4 align-middle text-slate-600 whitespace-nowrap">
+            {{ item.store_location }}
+          </td>
+          <td class="py-3 px-4 align-middle text-right tabular-nums whitespace-nowrap">
+            <div class="font-semibold text-slate-900">
+              {{ item.quantity_on_hand }} <span class="font-normal text-slate-500">{{ item.unit }}</span>
+            </div>
+            <div class="text-[10px] text-slate-400">Min: {{ item.reorder_level }}</div>
+          </td>
+          <td class="py-3 px-4 align-middle whitespace-nowrap text-xs">
+            {% if item.quantity_on_hand == 0 %}
+              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-300 bg-slate-100 text-slate-500 font-medium">
+                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="1.75"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" stroke-width="1.75"/></svg>
+                <span>Out of stock</span>
+              </div>
+            {% elif item.quantity_on_hand <= item.reorder_level %}
+              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-slate-700 bg-slate-100 text-slate-900 font-bold">
+                <svg class="w-3 h-3 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <span>Low stock</span>
+              </div>
+            {% else %}
+              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-200 bg-white text-slate-600 font-normal">
+                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Available</span>
+              </div>
+            {% endif %}
+          </td>
+          <td class="py-3 px-4 align-middle text-right whitespace-nowrap">
+            <a
+              href="/requisitions?new=1&item_id={{ item.id }}"
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:border-[#00529B] hover:text-[#00529B] text-slate-700 font-medium text-[11px] shadow-[0_1px_1px_rgba(15,23,42,0.03)] transition"
+            >
+              <span>Request</span>
+              <span class="text-slate-400 group-hover:text-[#00529B]">&rarr;</span>
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="py-8 text-center text-slate-400">No items match the current filter.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal 1: Receive Stock (SRV) -->
+<div id="srvModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-xl max-w-md w-full overflow-hidden">
+    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-slate-900">Receive Store Stock (SRV)</h3>
+      <button type="button" onclick="document.getElementById('srvModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
+    </div>
+    <form action="/inventory/restock" method="post" class="p-5 space-y-3.5 text-xs">
+      <div>
+        <label class="block font-medium text-slate-700 mb-1">Select Item</label>
+        <select name="item_id" required class="w-full h-9 rounded-md border border-slate-300 px-2.5 bg-white">
+          {% for it in items %}
+            <option value="{{ it.id }}">[{{ it.item_code }}] {{ it.name }} (Bal: {{ it.quantity_on_hand }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">SRV / Waybill No.</label>
+          <input type="text" name="voucher_no" required placeholder="SRV-AK-2026-0092" class="w-full h-9 rounded-md border border-slate-300 px-3" />
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Quantity Received</label>
+          <input type="number" name="quantity_added" min="1" value="5" required class="w-full h-9 rounded-md border border-slate-300 px-3" />
+        </div>
+      </div>
+      <div>
+        <label class="block font-medium text-slate-700 mb-1">Supplier / Source Store</label>
+        <input type="text" name="supplier" required placeholder="VRA Central Stores Tema" class="w-full h-9 rounded-md border border-slate-300 px-3" />
+      </div>
+      <div>
+        <label class="block font-medium text-slate-700 mb-1">Inspection Note</label>
+        <input type="text" name="reference_note" placeholder="Optional delivery note" class="w-full h-9 rounded-md border border-slate-300 px-3" />
+      </div>
+      <div class="pt-2 flex justify-end gap-2">
+        <button type="button" onclick="document.getElementById('srvModal').classList.add('hidden')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
+        <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] text-white font-medium">Record SRV</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 2: Register New Item -->
+<div id="newItemModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-xl max-w-lg w-full overflow-hidden">
+    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-slate-900">Register New Catalog Item</h3>
+      <button type="button" onclick="document.getElementById('newItemModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
+    </div>
+    <form action="/inventory/add" method="post" class="p-5 space-y-3 text-xs max-h-[80vh] overflow-y-auto">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Item Code</label>
+          <input type="text" name="item_code" required placeholder="VRA-MIS-008" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block font-medium text-slate-700 mb-1">Item Name</label>
+          <input type="text" name="name" required placeholder="Item description" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Department</label>
+          <select name="department_id" class="w-full h-8 rounded-md border border-slate-300 px-2 bg-white">
+            {% for d in departments %}
+              <option value="{{ d.id }}">{{ d.code }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Classification</label>
+          <select name="item_type" class="w-full h-8 rounded-md border border-slate-300 px-2 bg-white">
+            <option value="CONSUMABLE">Consumable</option>
+            <option value="ASSET">Fixed Asset</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Category</label>
+          <input type="text" name="category" value="IT & Networking" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Brand / Model</label>
+          <input type="text" name="brand_model" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Serial / Part No.</label>
+          <input type="text" name="serial_or_part_no" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">VRA Asset Tag</label>
+          <input type="text" name="vra_asset_tag" placeholder="Optional" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Opening Qty</label>
+          <input type="number" name="quantity_on_hand" value="10" min="0" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Unit</label>
+          <input type="text" name="unit" value="pcs" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Reorder Level</label>
+          <input type="number" name="reorder_level" value="4" min="0" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Shelf / Bin</label>
+          <input type="text" name="store_location" value="MIS Store A1" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+      </div>
+      <div class="pt-2 flex justify-end gap-2">
+        <button type="button" onclick="document.getElementById('newItemModal').classList.add('hidden')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
+        <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] text-white font-medium">Save Item</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

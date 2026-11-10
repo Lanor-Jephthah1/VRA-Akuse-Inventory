@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+  <div>
+    <h1 class="text-lg font-semibold text-slate-900 tracking-tight">Departments &amp; Personnel</h1>
+    <p class="text-xs text-slate-500 mt-0.5">
+      VRA Akuse operational units, department heads, and registered system users.
+    </p>
+  </div>
+  <div>
+    <button
+      type="button"
+      onclick="document.getElementById('addStaffModal').classList.remove('hidden')"
+      class="h-8 inline-flex items-center px-3 rounded-md bg-[#00529B] hover:bg-[#003f7a] text-xs font-medium text-white shadow-sm transition"
+    >
+      + Register Personnel
+    </button>
+  </div>
+</div>
+
+<!-- Clean Departments Summary Table -->
+<div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden mb-6">
+  <div class="px-4 py-3 border-b border-slate-200">
+    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-700">VRA, Akuse Departments</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="border-b border-slate-200 text-[11px] font-medium text-slate-500 bg-slate-50/60">
+          <th class="py-2.5 px-4">Code</th>
+          <th class="py-2.5 px-4">Department Name</th>
+          <th class="py-2.5 px-4">Location</th>
+          <th class="py-2.5 px-4">Head of Department</th>
+          <th class="py-2.5 px-4 text-right">Staff</th>
+          <th class="py-2.5 px-4 text-right">Requisitions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200/70 text-xs">
+        {% for dept in dept_list %}
+        <tr class="hover:bg-slate-50/80">
+          <td class="py-2.5 px-4 font-mono font-semibold text-slate-900">{{ dept.code }}</td>
+          <td class="py-2.5 px-4 font-medium text-slate-900">{{ dept.name }}</td>
+          <td class="py-2.5 px-4 text-slate-500">{{ dept.location }}</td>
+          <td class="py-2.5 px-4 text-slate-700">{{ dept.head_of_dept }}</td>
+          <td class="py-2.5 px-4 text-right tabular-nums text-slate-700">{{ dept.users|length }}</td>
+          <td class="py-2.5 px-4 text-right tabular-nums text-slate-700">{{ dept.requisitions|length }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Personnel Directory Table -->
+<div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden">
+  <div class="px-4 py-3 border-b border-slate-200">
+    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-700">Registered Staff &amp; NSS Personnel</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="border-b border-slate-200 text-[11px] font-medium text-slate-500 bg-slate-50/60">
+          <th class="py-2.5 px-4">Staff / NSS ID</th>
+          <th class="py-2.5 px-4">Full Name</th>
+          <th class="py-2.5 px-4">Department</th>
+          <th class="py-2.5 px-4">Designation</th>
+          <th class="py-2.5 px-4">Email</th>
+          <th class="py-2.5 px-4">Role</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200/70 text-xs">
+        {% for u in all_users %}
+        <tr class="hover:bg-slate-50/80">
+          <td class="py-2.5 px-4 font-mono font-medium text-slate-900">{{ u.staff_id }}</td>
+          <td class="py-2.5 px-4 font-medium text-slate-900">{{ u.full_name }}</td>
+          <td class="py-2.5 px-4 text-slate-600">
+            <span class="font-mono text-[11px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded mr-1">{{ u.department.code }}</span>
+            <span>{{ u.department.name }}</span>
+          </td>
+          <td class="py-2.5 px-4 text-slate-500">{{ u.job_title }}</td>
+          <td class="py-2.5 px-4 text-slate-500">{{ u.email }}</td>
+          <td class="py-2.5 px-4">
+            <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
+              {{ u.role.replace('_', ' ') }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: Register Personnel -->
+<div id="addStaffModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-xl max-w-md w-full overflow-hidden">
+    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-slate-900">Register Staff / NSS Personnel</h3>
+      <button type="button" onclick="document.getElementById('addStaffModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
+    </div>
+    <form action="/staff/add" method="post" class="p-5 space-y-3 text-xs">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Staff / NSS ID</label>
+          <input type="text" name="staff_id" required placeholder="VRA-AK-3401" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">System Role</label>
+          <select name="role" class="w-full h-8 rounded-md border border-slate-300 px-2 bg-white">
+            <option value="STAFF">Staff</option>
+            <option value="STORE_OFFICER">Store Officer (NSS)</option>
+            <option value="SUPERVISOR">Supervisor</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block font-medium text-slate-700 mb-1">Full Name</label>
+        <input type="text" name="full_name" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Official Email</label>
+          <input type="email" name="email" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Phone / Ext</label>
+          <input type="text" name="phone" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Department</label>
+          <select name="department_id" class="w-full h-8 rounded-md border border-slate-300 px-2 bg-white">
+            {% for d in departments %}
+              <option value="{{ d.id }}">{{ d.name }} ({{ d.code }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Job Title</label>
+          <input type="text" name="job_title" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        </div>
+      </div>
+      <div class="pt-2 flex justify-end gap-2">
+        <button type="button" onclick="document.getElementById('addStaffModal').classList.add('hidden')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
+        <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] text-white font-medium">Register</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
