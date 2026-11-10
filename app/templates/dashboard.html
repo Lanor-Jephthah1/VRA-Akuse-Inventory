@@ -9,9 +9,9 @@
     </h1>
     <p class="text-xs text-slate-500 mt-0.5">
       {% if current_user.role == 'STAFF' %}
-        Track your SIV requisitions, approved store pickups, and returnable equipment in your custody.
+        Track your departmental requisitions, approved pickups, and equipment in your custody.
       {% else %}
-        Store inventory balances, pending SIV requisitions, and active equipment loans.
+        Store inventory balance, pending vouchers, and equipment tracking across stations.
       {% endif %}
     </p>
   </div>
@@ -27,12 +27,12 @@
 
 {% if current_user.role == 'STAFF' %}
 <!-- Staff Personal 4-Column Metric Strip -->
-<div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 mb-6">
+<div class="bg-white border border-slate-200 rounded-lg shadow-sm grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 mb-6">
   <div class="p-4">
     <div class="text-xs font-medium text-slate-500">Available in Catalog</div>
     <div class="mt-1.5 flex items-baseline justify-between">
       <span class="text-2xl font-semibold text-slate-900 tabular-nums" data-count="{{ available_sku_count }}">{{ available_sku_count }}</span>
-      <a href="/inventory" class="text-xs font-medium text-[#00529B] hover:underline">Browse items</a>
+      <a href="/inventory" class="text-xs font-medium text-[#00529B] hover:underline">Browse</a>
     </div>
   </div>
 
@@ -48,7 +48,7 @@
     <div class="text-xs font-medium text-slate-500">Ready for Pickup</div>
     <div class="mt-1.5 flex items-baseline justify-between">
       <span class="text-2xl font-semibold text-slate-900 tabular-nums" data-count="{{ approved_ready_count }}">{{ approved_ready_count }}</span>
-      <span class="text-xs text-slate-500 font-medium">Approved by Supervisor</span>
+      <span class="text-xs text-slate-500">Approved by Supervisor</span>
     </div>
   </div>
 
@@ -56,26 +56,26 @@
     <div class="text-xs font-medium text-slate-500">Checked-Out Assets</div>
     <div class="mt-1.5 flex items-baseline justify-between">
       <span class="text-2xl font-semibold text-slate-900 tabular-nums" data-count="{{ active_loans|length }}">{{ active_loans|length }}</span>
-      <span class="text-xs text-slate-400">In my custody</span>
+      <span class="text-xs text-slate-400">In custody</span>
     </div>
   </div>
 </div>
 {% else %}
 <!-- Store Officer / Supervisor 4-Column Metric Strip -->
-<div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 mb-6">
+<div class="bg-white border border-slate-200 rounded-lg shadow-sm grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 mb-6">
   <div class="p-4">
     <div class="text-xs font-medium text-slate-500">Catalog Items</div>
     <div class="mt-1.5 flex items-baseline justify-between">
       <span class="text-2xl font-semibold text-slate-900 tabular-nums" data-count="{{ total_sku_count }}">{{ total_sku_count }}</span>
-      <span class="text-xs text-slate-400 tabular-nums">{{ total_units }} total units</span>
+      <span class="text-xs text-slate-400 tabular-nums">{{ total_units }} units</span>
     </div>
   </div>
 
   <div class="p-4">
-    <div class="text-xs font-medium text-slate-500">Low Stock Alerts</div>
+    <div class="text-xs font-medium text-slate-500">Low Stock Items</div>
     <div class="mt-1.5 flex items-baseline justify-between">
       <span class="text-2xl font-semibold text-slate-900 tabular-nums" data-count="{{ low_stock_count }}">{{ low_stock_count }}</span>
-      <a href="/inventory?stock_filter=low" class="text-xs font-medium text-[#00529B] hover:underline">View items</a>
+      <a href="/inventory?stock_filter=low" class="text-xs font-medium text-[#00529B] hover:underline">View</a>
     </div>
   </div>
 
@@ -83,7 +83,7 @@
     <div class="text-xs font-medium text-slate-500">Pending Approval</div>
     <div class="mt-1.5 flex items-baseline justify-between">
       <span class="text-2xl font-semibold text-slate-900 tabular-nums" data-count="{{ pending_count }}">{{ pending_count }}</span>
-      <a href="/requisitions?status_filter=PENDING_APPROVAL" class="text-xs font-medium text-[#00529B] hover:underline">Review queue</a>
+      <a href="/requisitions?status_filter=PENDING_APPROVAL" class="text-xs font-medium text-[#00529B] hover:underline">Review</a>
     </div>
   </div>
 
@@ -91,242 +91,212 @@
     <div class="text-xs font-medium text-slate-500">Ready for Issue</div>
     <div class="mt-1.5 flex items-baseline justify-between">
       <span class="text-2xl font-semibold text-slate-900 tabular-nums" data-count="{{ approved_ready_count }}">{{ approved_ready_count }}</span>
-      <a href="/requisitions?status_filter=APPROVED" class="text-xs font-medium text-[#00529B] hover:underline">Issue stock</a>
+      <a href="/requisitions?status_filter=APPROVED" class="text-xs font-medium text-[#00529B] hover:underline">Issue</a>
     </div>
   </div>
 </div>
 {% endif %}
 
-<!-- Main Content Grid -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-  <!-- Left 2 Columns: Requisitions Table -->
-  <div class="lg:col-span-2 space-y-6">
-    <div class="corp-card overflow-hidden">
-      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-700">
-          {% if current_user.role == 'STAFF' %}My Recent Requisitions (SIV){% else %}Recent Requisitions (SIV){% endif %}
-        </h2>
-        <a href="/requisitions" class="text-xs font-medium text-[#00529B] hover:underline">View all</a>
-      </div>
-
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-slate-200 text-[11px] font-medium text-slate-500 bg-slate-50/60">
-              <th class="py-2.5 px-4">Voucher</th>
-              {% if current_user.role != 'STAFF' %}
-              <th class="py-2.5 px-4">Requester</th>
-              {% endif %}
-              <th class="py-2.5 px-4">Item</th>
-              <th class="py-2.5 px-4 text-right">Qty</th>
-              <th class="py-2.5 px-4">Status</th>
-              <th class="py-2.5 px-4 text-right"></th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-200/70 text-xs">
-            {% for r in recent_requisitions %}
-            <tr class="hover:bg-slate-50/90">
-              <td class="py-2.5 px-4 font-mono font-medium text-slate-900 whitespace-nowrap">
-                <a href="/voucher/{{ r.id }}" class="hover:text-[#00529B] hover:underline">{{ r.siv_number }}</a>
-              </td>
-              {% if current_user.role != 'STAFF' %}
-              <td class="py-2.5 px-4 whitespace-nowrap">
-                <span class="font-medium text-slate-900">{{ r.requester.full_name }}</span>
-                <span class="text-slate-400 ml-1">({{ r.department.code }})</span>
-              </td>
-              {% endif %}
-              <td class="py-2.5 px-4 text-slate-700 truncate max-w-[220px]">
-                {{ r.item.name }}
-              </td>
-              <td class="py-2.5 px-4 text-right font-medium text-slate-900 tabular-nums whitespace-nowrap">
-                {{ r.quantity }} <span class="text-slate-400 font-normal">{{ r.item.unit }}</span>
-              </td>
-              <td class="py-2.5 px-4 whitespace-nowrap text-xs">
-                {% if r.status == 'PENDING_APPROVAL' %}
-                  <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-slate-400 bg-slate-50 text-slate-800 font-medium">
-                    <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="1.75"/><polyline points="12 6 12 12 16 14" stroke-width="1.75"/></svg>
-                    <span>Pending</span>
-                  </div>
-                {% elif r.status == 'APPROVED' %}
-                  <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-700 bg-slate-800 text-white font-medium">
-                    <svg class="w-3 h-3 text-slate-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke-width="2.2"/></svg>
-                    <span>Approved</span>
-                  </div>
-                {% elif r.status == 'ISSUED' %}
-                  <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-300 bg-white text-slate-900 font-medium">
-                    <svg class="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 13l4 4L19 7"/></svg>
-                    <span>Issued</span>
-                  </div>
-                {% elif r.status == 'RETURNED' %}
-                  <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-500">
-                    <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 10h10a5 5 0 015 5v2m0 0l-3-3m3 3l3-3"/></svg>
-                    <span>Returned</span>
-                  </div>
-                {% else %}
-                  <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-300 bg-slate-100 text-slate-500 line-through">
-                    <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" stroke-width="2"/><line x1="6" y1="6" x2="18" y2="18" stroke-width="2"/></svg>
-                    <span>Declined</span>
-                  </div>
-                {% endif %}
-              </td>
-              <td class="py-2.5 px-4 text-right whitespace-nowrap space-x-1">
-                {% if r.status == 'PENDING_APPROVAL' and current_user.role == 'SUPERVISOR' %}
-                  <form action="/requisitions/{{ r.id }}/approve" method="post" class="inline">
-                    <input type="hidden" name="decision" value="APPROVE" />
-                    <input type="hidden" name="supervisor_remarks" value="Approved" />
-                    <button type="submit" class="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-medium">
-                      Approve
-                    </button>
-                  </form>
-                {% elif r.status == 'PENDING_APPROVAL' and r.requester_id == current_user.id %}
-                  <form action="/requisitions/{{ r.id }}/cancel" method="post" class="inline" onsubmit="return confirm('Cancel this pending requisition?');">
-                    <button type="submit" class="px-2 py-1 rounded border border-slate-200 hover:bg-red-50 hover:text-red-700 hover:border-red-200 text-slate-600 text-[11px] font-medium transition-colors">
-                      Cancel
-                    </button>
-                  </form>
-                {% elif r.status == 'APPROVED' and current_user.role in ['STORE_OFFICER', 'SUPERVISOR'] %}
-                  <form action="/requisitions/{{ r.id }}/issue" method="post" class="inline">
-                    <button type="submit" class="px-2 py-1 rounded bg-[#00529B] hover:bg-[#003f7a] text-white text-[11px] font-medium">
-                      Issue
-                    </button>
-                  </form>
-                {% endif %}
-                <a href="/voucher/{{ r.id }}" class="text-slate-500 hover:text-slate-900 font-medium text-[11px] px-1.5 py-1">
-                  SIV
-                </a>
-              </td>
-            </tr>
-            {% else %}
-            <tr>
-              <td colspan="6" class="py-8 text-center text-slate-400">No requisitions recorded yet.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    {% if current_user.role != 'STAFF' %}
-    <!-- Store/Supervisor Active Returnable Loans -->
-    <div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden">
-      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-700">Checked-Out Returnable Assets</h2>
-        <span class="text-xs text-slate-400 tabular-nums">{{ active_loans|length }} active</span>
-      </div>
-      <div class="divide-y divide-slate-200/70 text-xs">
-        {% for loan in active_loans %}
-        <div class="px-4 py-3 flex items-center justify-between gap-4">
-          <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <span class="font-medium text-slate-900 truncate">{{ loan.item.name }}</span>
-              {% if loan.item.vra_asset_tag %}
-                <span class="font-mono text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded">{{ loan.item.vra_asset_tag }}</span>
-              {% endif %}
-            </div>
-            <div class="text-slate-500 mt-0.5">
-              {{ loan.requester.full_name }} ({{ loan.department.code }}) • Due {{ loan.expected_return_date or 'on completion' }}
-            </div>
-          </div>
-          {% if current_user.role in ['STORE_OFFICER', 'SUPERVISOR'] %}
-          <form action="/requisitions/{{ loan.id }}/return" method="post" class="shrink-0">
-            <button type="submit" class="px-2.5 py-1 rounded border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium text-[11px]">
-              Check in
-            </button>
-          </form>
-          {% endif %}
-        </div>
-        {% else %}
-        <div class="p-4 text-xs text-slate-500">No returnable assets currently checked out.</div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
+<!-- Clean Full-Width Requisitions Table (No scrollbars, clean whitespace) -->
+<div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6">
+  <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-800">
+      {% if current_user.role == 'STAFF' %}My Recent Requisitions (SIV){% else %}Recent Requisitions (SIV){% endif %}
+    </h2>
+    <a href="/requisitions" class="text-xs font-medium text-[#00529B] hover:underline">View all requisitions &rarr;</a>
   </div>
 
-  <!-- Right Column -->
-  <div class="space-y-6">
-    {% if current_user.role == 'STAFF' %}
-    <!-- Staff Right Column: My Checked-Out Assets & Quick Help -->
-    <div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden">
-      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-700">My Checked-Out Assets</h2>
-        <span class="text-xs text-slate-400 tabular-nums">{{ active_loans|length }} active</span>
-      </div>
-      <div class="divide-y divide-slate-200/70 text-xs">
-        {% for loan in active_loans %}
-        <div class="px-4 py-3">
-          <div class="flex items-center justify-between gap-2">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="border-b border-slate-200 text-[11px] font-medium text-slate-500 bg-slate-50/70">
+          <th class="py-2.5 px-5">Voucher No.</th>
+          {% if current_user.role != 'STAFF' %}
+          <th class="py-2.5 px-4">Requester</th>
+          {% endif %}
+          <th class="py-2.5 px-4">Item Requested</th>
+          <th class="py-2.5 px-4 text-center">Quantity</th>
+          <th class="py-2.5 px-4">Status</th>
+          <th class="py-2.5 px-5 text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 text-xs">
+        {% for r in recent_requisitions %}
+        <tr class="hover:bg-slate-50/80 transition-colors">
+          <td class="py-3 px-5 font-mono font-medium text-slate-900 whitespace-nowrap">
+            <a href="/voucher/{{ r.id }}" class="hover:text-[#00529B] hover:underline">{{ r.siv_number }}</a>
+          </td>
+          {% if current_user.role != 'STAFF' %}
+          <td class="py-3 px-4 whitespace-nowrap">
+            <span class="font-medium text-slate-900">{{ r.requester.full_name }}</span>
+            <span class="text-slate-400 text-[11px] ml-1">[{{ r.department.code }}]</span>
+          </td>
+          {% endif %}
+          <td class="py-3 px-4">
+            <div class="font-medium text-slate-900 line-clamp-1">{{ r.item.name }}</div>
+            <div class="text-[11px] text-slate-400 truncate max-w-sm">{{ r.purpose }}</div>
+          </td>
+          <td class="py-3 px-4 text-center font-medium text-slate-900 tabular-nums whitespace-nowrap">
+            {{ r.quantity }} <span class="text-slate-400 text-[11px] font-normal">{{ r.item.unit }}</span>
+          </td>
+          <td class="py-3 px-4 whitespace-nowrap">
+            {% if r.status == 'PENDING_APPROVAL' %}
+              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-slate-400 bg-slate-50 text-slate-800 font-medium">
+                <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="1.75"/><polyline points="12 6 12 12 16 14" stroke-width="1.75"/></svg>
+                <span>Pending</span>
+              </div>
+            {% elif r.status == 'APPROVED' %}
+              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-700 bg-slate-800 text-white font-medium">
+                <svg class="w-3 h-3 text-slate-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke-width="2.2"/></svg>
+                <span>Approved</span>
+              </div>
+            {% elif r.status == 'ISSUED' %}
+              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-300 bg-white text-slate-900 font-medium">
+                <svg class="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 13l4 4L19 7"/></svg>
+                <span>Issued</span>
+              </div>
+            {% elif r.status == 'RETURNED' %}
+              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-500">
+                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 10h10a5 5 0 015 5v2m0 0l-3-3m3 3l3-3"/></svg>
+                <span>Returned</span>
+              </div>
+            {% else %}
+              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-300 bg-slate-100 text-slate-500 line-through">
+                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" stroke-width="2"/><line x1="6" y1="6" x2="18" y2="18" stroke-width="2"/></svg>
+                <span>Declined</span>
+              </div>
+            {% endif %}
+          </td>
+          <td class="py-3 px-5 text-right whitespace-nowrap space-x-1.5">
+            {% if r.status == 'PENDING_APPROVAL' and current_user.role == 'SUPERVISOR' %}
+              <form action="/requisitions/{{ r.id }}/approve" method="post" class="inline">
+                <input type="hidden" name="decision" value="APPROVE" />
+                <input type="hidden" name="supervisor_remarks" value="Approved" />
+                <button type="submit" class="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-medium shadow-xs">
+                  Approve
+                </button>
+              </form>
+            {% elif r.status == 'PENDING_APPROVAL' and r.requester_id == current_user.id %}
+              <form action="/requisitions/{{ r.id }}/cancel" method="post" class="inline" onsubmit="return confirm('Cancel this pending requisition?');">
+                <button type="submit" class="px-2.5 py-1 rounded border border-slate-200 hover:bg-red-50 hover:text-red-700 text-slate-600 text-[11px] font-medium transition-colors">
+                  Cancel
+                </button>
+              </form>
+            {% elif r.status == 'APPROVED' and current_user.role in ['STORE_OFFICER', 'SUPERVISOR'] %}
+              <form action="/requisitions/{{ r.id }}/issue" method="post" class="inline">
+                <button type="submit" class="px-2.5 py-1 rounded bg-[#00529B] hover:bg-[#003f7a] text-white text-[11px] font-medium shadow-xs">
+                  Issue Stock
+                </button>
+              </form>
+            {% endif %}
+            <a href="/voucher/{{ r.id }}" class="inline-block px-2.5 py-1 rounded border border-slate-200 hover:bg-slate-50 text-slate-600 text-[11px] font-medium">
+              Voucher
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="py-8 text-center text-slate-400">No requisitions recorded yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Secondary Balanced 2-Column Section (No cramped 3-way split) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+  <!-- Left: Returnable Equipment in Custody -->
+  <div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden flex flex-col">
+    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-800">
+        {% if current_user.role == 'STAFF' %}My Borrowed Tools &amp; Equipment{% else %}Checked-Out Returnable Assets{% endif %}
+      </h2>
+      <span class="text-xs text-slate-400 tabular-nums">{{ active_loans|length }} active</span>
+    </div>
+    <div class="divide-y divide-slate-100 text-xs flex-1">
+      {% for loan in active_loans %}
+      <div class="px-5 py-3 flex items-center justify-between gap-4 hover:bg-slate-50/60 transition-colors">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
             <span class="font-medium text-slate-900 truncate">{{ loan.item.name }}</span>
             {% if loan.item.vra_asset_tag %}
-              <span class="font-mono text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded shrink-0">{{ loan.item.vra_asset_tag }}</span>
+              <span class="font-mono text-[10px] text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.2 rounded">{{ loan.item.vra_asset_tag }}</span>
             {% endif %}
           </div>
-          <div class="text-slate-500 mt-1 flex items-center justify-between">
-            <span>Voucher: <a href="/voucher/{{ loan.id }}" class="font-mono text-[#00529B] hover:underline">{{ loan.siv_number }}</a></span>
-            <span>Return: {{ loan.expected_return_date or 'Upon completion' }}</span>
+          <div class="text-slate-400 text-[11px] mt-0.5">
+            {{ loan.requester.full_name }} • Due: {{ loan.expected_return_date or 'On task completion' }}
           </div>
         </div>
-        {% else %}
-        <div class="p-4 text-xs text-slate-500">You currently have no returnable tools or assets checked out in your name.</div>
-        {% endfor %}
+        {% if current_user.role in ['STORE_OFFICER', 'SUPERVISOR'] %}
+        <form action="/requisitions/{{ loan.id }}/return" method="post" class="shrink-0">
+          <button type="submit" class="px-2.5 py-1 rounded border border-slate-300 hover:bg-slate-100 text-slate-700 font-medium text-[11px]">
+            Check in
+          </button>
+        </form>
+        {% endif %}
       </div>
+      {% else %}
+      <div class="p-6 text-center text-xs text-slate-400">
+        No returnable tools or equipment currently checked out.
+      </div>
+      {% endfor %}
     </div>
-
-    <div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] p-4 text-xs space-y-2.5">
-      <div class="font-semibold uppercase tracking-wider text-slate-700">Requisition Workflow (SIV)</div>
-      <div class="text-slate-600 space-y-1.5 leading-relaxed">
-        <div><strong class="text-slate-800">1. Request:</strong> Submit an SIV request from the catalog or requisitions page.</div>
-        <div><strong class="text-slate-800">2. Approval:</strong> A Supervisor authorizes your request.</div>
-        <div><strong class="text-slate-800">3. Pickup:</strong> Once marked <em>Approved</em>, collect your item from the Store Officer.</div>
-      </div>
-    </div>
-    {% else %}
-    <!-- Store Officer / Supervisor Right Column: Reorder Watchlist & Recent Stock Activity -->
-    <div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden">
-      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-700">Reorder Watchlist</h2>
-        <span class="text-xs text-amber-700 font-medium tabular-nums">{{ low_stock_items|length }} items</span>
-      </div>
-      <div class="divide-y divide-slate-200/70 text-xs">
-        {% for item in low_stock_items %}
-        <div class="px-4 py-2.5 flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <div class="font-medium text-slate-900 truncate">{{ item.name }}</div>
-            <div class="text-[11px] text-slate-400 font-mono">{{ item.item_code }} • {{ item.store_location }}</div>
-          </div>
-          <div class="text-right shrink-0 tabular-nums">
-            <span class="font-semibold text-amber-700">{{ item.quantity_on_hand }}</span>
-            <span class="text-slate-400">/ {{ item.reorder_level }} {{ item.unit }}</span>
-          </div>
-        </div>
-        {% else %}
-        <div class="p-4 text-xs text-slate-500">All items above minimum stock level.</div>
-        {% endfor %}
-      </div>
-    </div>
-
-    <div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden">
-      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-700">Recent Stock Activity</h2>
-        <a href="/audit-log" class="text-xs font-medium text-[#00529B] hover:underline">Full ledger</a>
-      </div>
-      <div class="divide-y divide-slate-200/70 text-xs">
-        {% for tx in recent_transactions %}
-        <div class="px-4 py-2.5 flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <div class="font-medium text-slate-900 truncate">{{ tx.item.name }}</div>
-            <div class="text-[11px] text-slate-400 truncate">{{ tx.voucher_no }} • {{ tx.recipient_or_supplier }}</div>
-          </div>
-          <div class="text-right shrink-0 tabular-nums font-medium {% if tx.quantity_change > 0 %}text-emerald-700{% else %}text-slate-700{% endif %}">
-            {% if tx.quantity_change > 0 %}+{{ tx.quantity_change }}{% else %}{{ tx.quantity_change }}{% endif %}
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
   </div>
+
+  <!-- Right: Stock Watchlist or Workflow Guide -->
+  {% if current_user.role == 'STAFF' %}
+  <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-5 flex flex-col justify-between">
+    <div>
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-800 mb-3">Stores Requisition Workflow (SIV)</h2>
+      <div class="space-y-3 text-xs text-slate-600 leading-relaxed">
+        <div class="flex items-start gap-3">
+          <span class="font-mono text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-200 w-5 h-5 flex items-center justify-center rounded shrink-0">1</span>
+          <div><strong class="text-slate-900">Submit Request:</strong> Select an item from the catalog and specify the operational reason and work order.</div>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="font-mono text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-200 w-5 h-5 flex items-center justify-center rounded shrink-0">2</span>
+          <div><strong class="text-slate-900">Supervisor Approval:</strong> Your Head of Department reviews and authorizes the requisition voucher.</div>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="font-mono text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-200 w-5 h-5 flex items-center justify-center rounded shrink-0">3</span>
+          <div><strong class="text-slate-900">Store Collection:</strong> Once marked <em>Approved</em>, present your voucher to the Store Officer to collect the items.</div>
+        </div>
+      </div>
+    </div>
+    <div class="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between">
+      <span class="text-[11px] text-slate-400">MIS &amp; Technical Stores • Akuse</span>
+      <a href="/requisitions?new=1" class="text-xs font-semibold text-[#00529B] hover:underline">+ Request new item</a>
+    </div>
+  </div>
+  {% else %}
+  <!-- Store Officer / Supervisor: Reorder Watchlist -->
+  <div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden flex flex-col">
+    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-800">Reorder Watchlist (Low Stock)</h2>
+      <span class="text-xs text-slate-500 font-medium tabular-nums">{{ low_stock_items|length }} items</span>
+    </div>
+    <div class="divide-y divide-slate-100 text-xs flex-1">
+      {% for item in low_stock_items %}
+      <div class="px-5 py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50/60 transition-colors">
+        <div class="min-w-0">
+          <div class="font-medium text-slate-900 truncate">{{ item.name }}</div>
+          <div class="text-[11px] text-slate-400 font-mono">{{ item.item_code }} • {{ item.store_location }}</div>
+        </div>
+        <div class="text-right shrink-0 tabular-nums">
+          <span class="font-bold text-slate-900">{{ item.quantity_on_hand }}</span>
+          <span class="text-slate-400 text-[11px]">/ Min: {{ item.reorder_level }} {{ item.unit }}</span>
+        </div>
+      </div>
+      {% else %}
+      <div class="p-6 text-center text-xs text-slate-400">
+        All store items are currently above minimum threshold.
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 
 </div>
 

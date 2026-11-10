@@ -11,7 +11,7 @@
   <div>
     <button
       type="button"
-      onclick="document.getElementById('addStaffModal').classList.remove('hidden')"
+      onclick="openModal('addStaffModal')"
       class="h-8 inline-flex items-center px-3 rounded-md bg-[#00529B] hover:bg-[#003f7a] text-xs font-medium text-white shadow-sm transition"
     >
       + Register Personnel
@@ -93,11 +93,11 @@
 </div>
 
 <!-- Modal: Register Personnel -->
-<div id="addStaffModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-4">
-  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-xl max-w-md w-full overflow-hidden">
-    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+<div id="addStaffModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-2xl max-w-md w-full max-h-[85vh] max-h-[85dvh] overflow-y-auto my-auto flex flex-col">
+    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10 shrink-0">
       <h3 class="text-sm font-semibold text-slate-900">Register Staff / NSS Personnel</h3>
-      <button type="button" onclick="document.getElementById('addStaffModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
+      <button type="button" onclick="closeModal('addStaffModal')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
     </div>
     <form action="/staff/add" method="post" class="p-5 space-y-3 text-xs">
       <div class="grid grid-cols-2 gap-3">
@@ -143,7 +143,7 @@
         </div>
       </div>
       <div class="pt-2 flex justify-end gap-2">
-        <button type="button" onclick="document.getElementById('addStaffModal').classList.add('hidden')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
+        <button type="button" onclick="closeModal('addStaffModal')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
         <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] text-white font-medium">Register</button>
       </div>
     </form>

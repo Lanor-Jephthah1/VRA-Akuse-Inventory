@@ -12,14 +12,14 @@
   <div class="flex flex-wrap items-center gap-2">
     <button
       type="button"
-      onclick="document.getElementById('newDeptModal').classList.remove('hidden')"
+      onclick="openModal('newDeptModal')"
       class="h-8 inline-flex items-center px-3 rounded-md bg-white border border-slate-300 hover:bg-slate-50 text-xs font-medium text-slate-700 shadow-sm transition"
     >
       + Add Department
     </button>
     <button
       type="button"
-      onclick="document.getElementById('addStaffAdminModal').classList.remove('hidden')"
+      onclick="openModal('addStaffAdminModal')"
       class="h-8 inline-flex items-center px-3 rounded-md bg-white border border-slate-300 hover:bg-slate-50 text-xs font-medium text-slate-700 shadow-sm transition"
     >
       + Register User
@@ -221,13 +221,13 @@
 </div>
 
 <!-- Modal 1: Add New Department -->
-<div id="newDeptModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-4">
-  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-xl max-w-md w-full overflow-hidden">
-    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+<div id="newDeptModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-2xl max-w-md w-full max-h-[85vh] max-h-[85dvh] overflow-y-auto my-auto flex flex-col">
+    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10 shrink-0">
       <h3 class="text-sm font-semibold text-slate-900">Add VRA Akuse Department</h3>
-      <button type="button" onclick="document.getElementById('newDeptModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
+      <button type="button" onclick="closeModal('newDeptModal')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
     </div>
-    <form action="/admin/department/add" method="post" class="p-5 space-y-3.5 text-xs">
+    <form action="/admin/department/add" method="post" class="p-5 space-y-3.5 text-xs overflow-y-auto">
       <div class="grid grid-cols-3 gap-3">
         <div>
           <label class="block font-medium text-slate-700 mb-1">Dept Code</label>
@@ -247,7 +247,7 @@
         <input type="text" name="head_of_dept" placeholder="e.g. Mr. Kofi Boateng" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
       </div>
       <div class="pt-2 flex justify-end gap-2">
-        <button type="button" onclick="document.getElementById('newDeptModal').classList.add('hidden')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
+        <button type="button" onclick="closeModal('newDeptModal')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
         <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] text-white font-medium">Create Department</button>
       </div>
     </form>
@@ -255,13 +255,13 @@
 </div>
 
 <!-- Modal 2: Register User from Admin -->
-<div id="addStaffAdminModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-4">
-  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-xl max-w-md w-full overflow-hidden">
-    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+<div id="addStaffAdminModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-2xl max-w-md w-full max-h-[85vh] max-h-[85dvh] overflow-y-auto my-auto flex flex-col">
+    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10 shrink-0">
       <h3 class="text-sm font-semibold text-slate-900">Register Staff / NSS Personnel</h3>
-      <button type="button" onclick="document.getElementById('addStaffAdminModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
+      <button type="button" onclick="closeModal('addStaffAdminModal')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
     </div>
-    <form action="/staff/add" method="post" class="p-5 space-y-3 text-xs">
+    <form action="/staff/add" method="post" class="p-5 space-y-3 text-xs overflow-y-auto">
       <input type="hidden" name="redirect_to" value="/admin" />
       <div class="grid grid-cols-2 gap-3">
         <div>
@@ -306,7 +306,7 @@
         </div>
       </div>
       <div class="pt-2 flex justify-end gap-2">
-        <button type="button" onclick="document.getElementById('addStaffAdminModal').classList.add('hidden')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
+        <button type="button" onclick="closeModal('addStaffAdminModal')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
         <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] text-white font-medium">Create Account</button>
       </div>
     </form>

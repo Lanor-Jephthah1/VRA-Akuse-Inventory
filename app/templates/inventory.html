@@ -16,14 +16,14 @@
     {% if current_user.role in ['STORE_OFFICER', 'SUPERVISOR'] %}
     <button
       type="button"
-      onclick="document.getElementById('srvModal').classList.remove('hidden')"
+      onclick="openModal('srvModal')"
       class="h-8 inline-flex items-center px-3 rounded-md bg-white border border-slate-300 hover:bg-slate-50 text-xs font-medium text-slate-800 shadow-sm transition"
     >
       + Receive Stock (SRV)
     </button>
     <button
       type="button"
-      onclick="document.getElementById('newItemModal').classList.remove('hidden')"
+      onclick="openModal('newItemModal')"
       class="h-8 inline-flex items-center px-3 rounded-md bg-[#00529B] hover:bg-[#003f7a] text-xs font-medium text-white shadow-sm transition"
     >
       + New Catalog Item
@@ -163,11 +163,11 @@
 </div>
 
 <!-- Modal 1: Receive Stock (SRV) -->
-<div id="srvModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-4">
-  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-xl max-w-md w-full overflow-hidden">
-    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+<div id="srvModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-2xl max-w-md w-full max-h-[85vh] max-h-[85dvh] overflow-y-auto my-auto flex flex-col">
+    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10 shrink-0">
       <h3 class="text-sm font-semibold text-slate-900">Receive Store Stock (SRV)</h3>
-      <button type="button" onclick="document.getElementById('srvModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
+      <button type="button" onclick="closeModal('srvModal')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
     </div>
     <form action="/inventory/restock" method="post" class="p-5 space-y-3.5 text-xs">
       <div>
@@ -197,7 +197,7 @@
         <input type="text" name="reference_note" placeholder="Optional delivery note" class="w-full h-9 rounded-md border border-slate-300 px-3" />
       </div>
       <div class="pt-2 flex justify-end gap-2">
-        <button type="button" onclick="document.getElementById('srvModal').classList.add('hidden')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
+        <button type="button" onclick="closeModal('srvModal')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
         <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] text-white font-medium">Record SRV</button>
       </div>
     </form>
@@ -205,13 +205,13 @@
 </div>
 
 <!-- Modal 2: Register New Item -->
-<div id="newItemModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-4">
-  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-xl max-w-lg w-full overflow-hidden">
-    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+<div id="newItemModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-2xl max-w-lg w-full max-h-[85vh] max-h-[85dvh] overflow-y-auto my-auto flex flex-col">
+    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10 shrink-0">
       <h3 class="text-sm font-semibold text-slate-900">Register New Catalog Item</h3>
-      <button type="button" onclick="document.getElementById('newItemModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
+      <button type="button" onclick="closeModal('newItemModal')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
     </div>
-    <form action="/inventory/add" method="post" class="p-5 space-y-3 text-xs max-h-[80vh] overflow-y-auto">
+    <form action="/inventory/add" method="post" class="p-5 space-y-3 text-xs overflow-y-auto">
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
           <label class="block font-medium text-slate-700 mb-1">Item Code</label>
@@ -276,7 +276,7 @@
         </div>
       </div>
       <div class="pt-2 flex justify-end gap-2">
-        <button type="button" onclick="document.getElementById('newItemModal').classList.add('hidden')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
+        <button type="button" onclick="closeModal('newItemModal')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
         <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] text-white font-medium">Save Item</button>
       </div>
     </form>

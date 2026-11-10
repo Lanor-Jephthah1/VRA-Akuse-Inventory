@@ -12,7 +12,7 @@
   <div class="flex items-center gap-2">
     <button
       type="button"
-      onclick="document.getElementById('newReqModal').classList.remove('hidden')"
+      onclick="openModal('newReqModal')"
       class="h-8 inline-flex items-center px-3 rounded-md bg-[#00529B] hover:bg-[#003f7a] text-xs font-medium text-white shadow-sm transition"
     >
       + New Requisition
@@ -156,13 +156,13 @@
 </div>
 
 <!-- Modal: New Staff Requisition -->
-<div id="newReqModal" class="{% if not request.query_params.get('new') and not request.query_params.get('item_id') %}hidden{% endif %} fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-4">
-  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-xl max-w-md w-full overflow-hidden">
-    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+<div id="newReqModal" class="{% if not request.query_params.get('new') and not request.query_params.get('item_id') %}hidden{% endif %} fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-2xl max-w-md w-full max-h-[85vh] max-h-[85dvh] overflow-y-auto my-auto flex flex-col">
+    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10 shrink-0">
       <h3 class="text-sm font-semibold text-slate-900">New Stores Requisition (SIV)</h3>
-      <button type="button" onclick="document.getElementById('newReqModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
+      <button type="button" onclick="closeModal('newReqModal')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
     </div>
-    <form action="/requisitions/create" method="post" class="p-5 space-y-3.5 text-xs">
+    <form action="/requisitions/create" method="post" class="p-5 space-y-3.5 text-xs overflow-y-auto">
       <div>
         <label class="block font-medium text-slate-700 mb-1">Select Item</label>
         <select name="item_id" required class="w-full h-9 rounded-md border border-slate-300 px-2.5 bg-white">
@@ -205,11 +205,22 @@
         </div>
       </div>
       <div class="pt-2 flex justify-end gap-2">
-        <button type="button" onclick="document.getElementById('newReqModal').classList.add('hidden')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
+        <button type="button" onclick="closeModal('newReqModal')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
         <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] text-white font-medium">Submit Requisition</button>
       </div>
     </form>
   </div>
 </div>
+
+<script>
+  // Ensure that if modal was auto-opened via query param, body scroll is locked
+  document.addEventListener('DOMContentLoaded', () => {
+    const m = document.getElementById('newReqModal');
+    if (m && !m.classList.contains('hidden')) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    }
+  });
+</script>
 
 {% endblock %}
