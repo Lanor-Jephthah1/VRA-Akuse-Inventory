@@ -242,61 +242,69 @@
 
           <div id="requisitionItemsContainer" class="space-y-2.5">
             <!-- First Line Item Row -->
-            <div class="requisition-item-row p-2.5 rounded-md border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <div class="flex-1 min-w-0">
-                <label class="block text-[11px] font-medium text-slate-600 mb-1 sm:hidden">Item</label>
-                <select name="item_ids" required class="w-full h-9 rounded-md border border-slate-300 px-2.5 bg-white text-xs">
-                  {% for it in items %}
-                    <option value="{{ it.id }}" {% if request.query_params.get('item_id') == it.id|string %}selected{% endif %}>
-                      [{{ it.item_code }}] {{ it.name }} ({{ it.quantity_on_hand }} {{ it.unit }} in stock)
-                    </option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="w-full sm:w-28 shrink-0 flex items-center gap-2">
-                <div class="flex-1">
-                  <label class="block text-[11px] font-medium text-slate-600 mb-1 sm:hidden">Qty</label>
-                  <input type="number" name="quantities" value="1" min="1" required placeholder="Qty" class="w-full h-9 rounded-md border border-slate-300 px-2.5 text-center text-xs bg-white" />
+            <div class="requisition-item-row p-3 rounded-lg border border-slate-200 bg-slate-50/50 flex flex-col gap-2">
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div class="flex-1 min-w-0">
+                  <label class="block text-[11px] font-medium text-slate-600 mb-1 sm:hidden">Item</label>
+                  <select name="item_ids" required onchange="validateRequisitionRow(this)" class="w-full h-9 rounded-md border border-slate-300 px-2.5 bg-white text-xs">
+                    {% for it in items %}
+                      <option value="{{ it.id }}" data-stock="{{ it.quantity_on_hand }}" data-unit="{{ it.unit }}" data-code="{{ it.item_code }}" data-name="{{ it.name }}" {% if request.query_params.get('item_id') == it.id|string %}selected{% endif %}>
+                        [{{ it.item_code }}] {{ it.name }} ({{ it.quantity_on_hand }} {{ it.unit }} in stock)
+                      </option>
+                    {% endfor %}
+                  </select>
                 </div>
-                <button
-                  type="button"
-                  onclick="removeRequisitionItemRow(this)"
-                  title="Remove item"
-                  class="h-9 w-9 inline-flex items-center justify-center rounded border border-slate-200 hover:bg-red-50 hover:text-red-600 text-slate-400 transition shrink-0 cursor-pointer"
-                >
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
+                <div class="w-full sm:w-28 shrink-0 flex items-center gap-2">
+                  <div class="flex-1">
+                    <label class="block text-[11px] font-medium text-slate-600 mb-1 sm:hidden">Qty</label>
+                    <input type="number" name="quantities" value="1" min="1" required placeholder="Qty" oninput="validateRequisitionRow(this)" onchange="validateRequisitionRow(this)" class="w-full h-9 rounded-md border border-slate-300 px-2.5 text-center text-xs bg-white req-qty-input" />
+                  </div>
+                  <button
+                    type="button"
+                    onclick="removeRequisitionItemRow(this)"
+                    title="Remove item"
+                    class="h-9 w-9 inline-flex items-center justify-center rounded border border-slate-200 hover:bg-red-50 hover:text-red-600 text-slate-400 transition shrink-0 cursor-pointer"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
               </div>
+              <!-- Real-time Quantity & Stock Live Message Box -->
+              <div class="req-row-feedback text-[11px] hidden"></div>
             </div>
           </div>
 
           <!-- Items Template for cloning -->
           <template id="requisitionRowTemplate">
-            <div class="requisition-item-row p-2.5 rounded-md border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <div class="flex-1 min-w-0">
-                <label class="block text-[11px] font-medium text-slate-600 mb-1 sm:hidden">Item</label>
-                <select name="item_ids" required class="w-full h-9 rounded-md border border-slate-300 px-2.5 bg-white text-xs">
-                  {% for it in items %}
-                    <option value="{{ it.id }}">
-                      [{{ it.item_code }}] {{ it.name }} ({{ it.quantity_on_hand }} {{ it.unit }} in stock)
-                    </option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="w-full sm:w-28 shrink-0 flex items-center gap-2">
-                <div class="flex-1">
-                  <label class="block text-[11px] font-medium text-slate-600 mb-1 sm:hidden">Qty</label>
-                  <input type="number" name="quantities" value="1" min="1" required placeholder="Qty" class="w-full h-9 rounded-md border border-slate-300 px-2.5 text-center text-xs bg-white" />
+            <div class="requisition-item-row p-3 rounded-lg border border-slate-200 bg-slate-50/50 flex flex-col gap-2">
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div class="flex-1 min-w-0">
+                  <label class="block text-[11px] font-medium text-slate-600 mb-1 sm:hidden">Item</label>
+                  <select name="item_ids" required onchange="validateRequisitionRow(this)" class="w-full h-9 rounded-md border border-slate-300 px-2.5 bg-white text-xs">
+                    {% for it in items %}
+                      <option value="{{ it.id }}" data-stock="{{ it.quantity_on_hand }}" data-unit="{{ it.unit }}" data-code="{{ it.item_code }}" data-name="{{ it.name }}">
+                        [{{ it.item_code }}] {{ it.name }} ({{ it.quantity_on_hand }} {{ it.unit }} in stock)
+                      </option>
+                    {% endfor %}
+                  </select>
                 </div>
-                <button
-                  type="button"
-                  onclick="removeRequisitionItemRow(this)"
-                  title="Remove item"
-                  class="h-9 w-9 inline-flex items-center justify-center rounded border border-slate-200 hover:bg-red-50 hover:text-red-600 text-slate-400 transition shrink-0 cursor-pointer"
-                >
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
+                <div class="w-full sm:w-28 shrink-0 flex items-center gap-2">
+                  <div class="flex-1">
+                    <label class="block text-[11px] font-medium text-slate-600 mb-1 sm:hidden">Qty</label>
+                    <input type="number" name="quantities" value="1" min="1" required placeholder="Qty" oninput="validateRequisitionRow(this)" onchange="validateRequisitionRow(this)" class="w-full h-9 rounded-md border border-slate-300 px-2.5 text-center text-xs bg-white req-qty-input" />
+                  </div>
+                  <button
+                    type="button"
+                    onclick="removeRequisitionItemRow(this)"
+                    title="Remove item"
+                    class="h-9 w-9 inline-flex items-center justify-center rounded border border-slate-200 hover:bg-red-50 hover:text-red-600 text-slate-400 transition shrink-0 cursor-pointer"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
               </div>
+              <!-- Real-time Quantity & Stock Live Message Box -->
+              <div class="req-row-feedback text-[11px] hidden"></div>
             </div>
           </template>
 
@@ -308,7 +316,7 @@
       </div>
       <div class="px-5 py-3 border-t border-slate-200 bg-slate-50/80 flex justify-end gap-2 shrink-0">
         <button type="button" onclick="closeModal('newReqModal')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-100 cursor-pointer">Cancel</button>
-        <button type="submit" class="h-8 px-4 rounded-md bg-[#00529B] hover:bg-[#003d75] text-white font-medium shadow-xs cursor-pointer">Submit Requisition</button>
+        <button type="submit" id="submitReqBtn" class="h-8 px-4 rounded-md bg-[#00529B] hover:bg-[#003d75] text-white font-medium shadow-xs cursor-pointer transition">Submit Requisition</button>
       </div>
     </form>
   </div>

@@ -210,15 +210,22 @@
     </header>
 
     {% if flash_msg %}
+    {% set is_warning = ('insufficient' in flash_msg.lower() or 'error' in flash_msg.lower() or 'denied' in flash_msg.lower() or 'failed' in flash_msg.lower() or 'declined' in flash_msg.lower()) %}
     <div class="max-w-6xl w-full mx-auto px-4 sm:px-6 mt-4">
-      <div class="bg-white border border-slate-200 rounded-lg px-4 py-2.5 shadow-xs flex items-center justify-between gap-3 text-xs">
+      <div class="rounded-lg px-4 py-2.5 shadow-xs flex items-center justify-between gap-3 text-xs border {% if is_warning %}bg-rose-50/80 border-rose-200 text-rose-800{% else %}bg-white border-slate-200 text-slate-800{% endif %}">
         <div class="flex items-center gap-2.5 min-w-0">
-          <div class="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center shrink-0">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          {% if is_warning %}
+          <div class="w-5 h-5 rounded-full bg-rose-100 border border-rose-300 text-rose-700 flex items-center justify-center shrink-0">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
           </div>
-          <span class="font-medium text-slate-800 truncate">{{ flash_msg }}</span>
+          {% else %}
+          <div class="w-5 h-5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center shrink-0">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          {% endif %}
+          <span class="font-medium truncate">{{ flash_msg }}</span>
         </div>
-        <a href="{{ request.url.path }}" class="text-xs text-slate-400 hover:text-slate-700 font-medium px-2 py-1 rounded hover:bg-slate-100 transition-colors shrink-0">
+        <a href="{{ request.url.path }}" class="text-xs {% if is_warning %}text-rose-600 hover:text-rose-800 hover:bg-rose-100{% else %}text-slate-400 hover:text-slate-700 hover:bg-slate-100{% endif %} font-medium px-2 py-1 rounded transition-colors shrink-0">
           Dismiss
         </a>
       </div>

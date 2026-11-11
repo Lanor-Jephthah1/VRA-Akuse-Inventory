@@ -554,6 +554,12 @@ async def create_requisition(
         if not item:
             continue
 
+        if qty > item.quantity_on_hand:
+            return RedirectResponse(
+                url=f"/requisitions?msg=Insufficient+Stock!+Only+{item.quantity_on_hand}+{item.unit}+available+in+store+for+{item.item_code}",
+                status_code=303,
+            )
+
         returnable_flag = True if (item.item_type == "ASSET" or form.get("is_returnable") == "on") else False
 
         req = Requisition(

@@ -377,6 +377,11 @@ function addRequisitionItemRow() {
     initCustomSelects();
   }
   updateRequisitionItemsSummary();
+  const newRow = container.lastElementChild;
+  if (newRow) {
+    const input = newRow.querySelector('input[name="quantities"]');
+    if (input) validateRequisitionRow(input);
+  }
 }
 
 function removeRequisitionItemRow(btn) {
@@ -391,5 +396,94 @@ function removeRequisitionItemRow(btn) {
   if (row) {
     row.remove();
     updateRequisitionItemsSummary();
+    updateRequisitionFormSubmitState();
   }
 }
+
+// Real-time Quantity & Stock Limit Validator & Message Box
+function validateRequisitionRow(el) {
+  const row = el.closest('.requisition-item-row');
+  if (!row) return;
+
+  const select = row.querySelector('select[name="item_ids"]');
+  const qtyInput = row.querySelector('input[name="quantities"]');
+  const feedback = row.querySelector('.req-row-feedback');
+  if (!select || !qtyInput || !feedback) return;
+
+  const selectedOpt = select.options[select.selectedIndex];
+  if (!selectedOpt) return;
+
+  const stock = parseInt(selectedOpt.getAttribute('data-stock') || '0', 10);
+  const unit = selectedOpt.getAttribute('data-unit') || 'units';
+  const code = selectedOpt.getAttribute('data-code') || '';
+  const rawVal = qtyInput.value;
+  const qty = parseInt(rawVal, 10);
+
+  qtyInput.setAttribute('max', stock);
+
+  // Check state
+  if (isNaN(qty) || rawVal === '' || qty < 1) {
+    qtyInput.classList.add('border-amber-400', 'focus:ring-amber-200');
+    qtyInput.classList.remove('border-rose-500', 'text-rose-700', 'bg-rose-50/30', 'border-slate-300');
+    feedback.className = 'req-row-feedback text-[11px] p-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 flex items-center gap-1.5';
+    feedback.innerHTML = `<svg class="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><span>Please enter a requested quantity of 1 or more (Max available: <strong>${stock} ${unit}</strong>).</span>`;
+    feedback.classList.remove('hidden');
+  } else if (qty > stock) {
+    // EXCEEDS STOCK! (The user's exact issue shown in screenshot)
+    qtyInput.classList.add('border-rose-500', 'text-rose-700', 'bg-rose-50/30', 'focus:ring-rose-200');
+    qtyInput.classList.remove('border-slate-300', 'border-amber-400');
+    feedback.className = 'req-row-feedback text-[11px] p-2 rounded-md bg-rose-50 border border-rose-200 text-rose-800 flex items-start gap-2';
+    feedback.innerHTML = `<svg class="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><div><span class="font-semibold">Insufficient Store Stock:</span> You entered <strong>${qty} ${unit}</strong>, but only <strong>${stock} ${unit}</strong> are currently available in stores for <em>${code}</em>. Please enter <strong>${stock}</strong> or fewer.</div>`;
+    feedback.classList.remove('hidden');
+  } else {
+    // Valid quantity within stock limit
+    qtyInput.classList.remove('border-rose-500', 'text-rose-700', 'bg-rose-50/30', 'border-amber-400');
+    qtyInput.classList.add('border-slate-300');
+    const remaining = stock - qty;
+    feedback.className = 'req-row-feedback text-[11px] px-2.5 py-1.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1.5';
+    feedback.innerHTML = `<svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7"/></svg><span>Available in store: <strong>${stock} ${unit}</strong> (${remaining} ${unit} will remain in store).</span>`;
+    feedback.classList.remove('hidden');
+  }
+
+  updateRequisitionFormSubmitState();
+}
+
+function updateRequisitionFormSubmitState() {
+  const container = document.getElementById('requisitionItemsContainer');
+  const submitBtn = document.getElementById('submitReqBtn');
+  if (!container || !submitBtn) return;
+
+  const rows = container.querySelectorAll('.requisition-item-row');
+  let hasError = false;
+
+  rows.forEach(r => {
+    const select = r.querySelector('select[name="item_ids"]');
+    const qtyInput = r.querySelector('input[name="quantities"]');
+    if (select && qtyInput) {
+      const selectedOpt = select.options[select.selectedIndex];
+      const stock = parseInt(selectedOpt?.getAttribute('data-stock') || '0', 10);
+      const qty = parseInt(qtyInput.value || '0', 10);
+      if (isNaN(qty) || qty < 1 || qty > stock) {
+        hasError = true;
+      }
+    }
+  });
+
+  if (hasError) {
+    submitBtn.disabled = true;
+    submitBtn.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+    submitBtn.title = 'Please adjust requested quantity to available stock limit';
+  } else {
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+    submitBtn.title = '';
+  }
+}
+
+// Initialise row validation on modal open
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('#requisitionItemsContainer .requisition-item-row').forEach(row => {
+    const input = row.querySelector('input[name="quantities"]');
+    if (input) validateRequisitionRow(input);
+  });
+});
