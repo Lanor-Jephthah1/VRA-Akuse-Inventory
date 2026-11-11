@@ -74,7 +74,7 @@ class Requisition(Base):
     __tablename__ = "requisitions"
 
     id = Column(Integer, primary_key=True, index=True)
-    siv_number = Column(String(40), unique=True, index=True, nullable=False)  # e.g. SIV-AK-2026-0001
+    siv_number = Column(String(40), index=True, nullable=False)  # e.g. SIV-AK-2026-0001 (shared across line items in a requisition order)
     requester_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=False)
     item_id = Column(Integer, ForeignKey("inventory_items.id"), nullable=False)

@@ -38,12 +38,17 @@
       </thead>
       <tbody class="divide-y divide-slate-200/70 text-xs">
         {% for dept in dept_list %}
-        <tr class="hover:bg-slate-50/80">
-          <td class="py-2.5 px-4 font-mono font-semibold text-slate-900">{{ dept.code }}</td>
+        <tr class="hover:bg-slate-50/80 cursor-pointer" onclick="filterPersonnelByDept('{{ dept.code }}')" title="Click to view staff in {{ dept.name }}">
+          <td class="py-2.5 px-4 font-mono font-semibold text-slate-900">
+            <span class="inline-flex items-center gap-1 hover:text-[#00529B]">
+              {{ dept.code }}
+              <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </span>
+          </td>
           <td class="py-2.5 px-4 font-medium text-slate-900">{{ dept.name }}</td>
           <td class="py-2.5 px-4 text-slate-500">{{ dept.location }}</td>
           <td class="py-2.5 px-4 text-slate-700">{{ dept.head_of_dept }}</td>
-          <td class="py-2.5 px-4 text-right tabular-nums text-slate-700">{{ dept.users|length }}</td>
+          <td class="py-2.5 px-4 text-right tabular-nums text-slate-700 font-semibold">{{ dept.users|length }}</td>
           <td class="py-2.5 px-4 text-right tabular-nums text-slate-700">{{ dept.requisitions|length }}</td>
         </tr>
         {% endfor %}
@@ -52,44 +57,160 @@
   </div>
 </div>
 
-<!-- Personnel Directory Table -->
-<div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden">
-  <div class="px-4 py-3 border-b border-slate-200">
-    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-700">Registered Staff &amp; NSS Personnel</h2>
+<!-- Personnel Directory Card (Filterable, Sortable, Paginated) -->
+<div id="personnelDirectorySection" class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_2px_rgba(15,23,42,0.03)] overflow-hidden">
+  
+  <!-- Header & Live Filters Bar -->
+  <div class="px-4 py-3.5 border-b border-slate-200 bg-white space-y-3">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div>
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-800">Registered Staff &amp; NSS Personnel</h2>
+        <p class="text-[11px] text-slate-500 mt-0.5">Filter by department, role, or search by name &amp; staff ID.</p>
+      </div>
+      <div id="personnelCountDisplay" class="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md self-start sm:self-auto">
+        Showing 1–8 of {{ all_users|length }} personnel
+      </div>
+    </div>
+
+    <!-- Filter Inputs Row -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 pt-1">
+      <!-- Search Input -->
+      <div class="relative">
+        <input
+          type="text"
+          id="personnelSearch"
+          placeholder="Search name, ID, title..."
+          class="w-full h-8 pl-8 pr-2.5 text-xs rounded-md border border-slate-300 bg-slate-50/50 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#00529B] focus:border-[#00529B] transition"
+        />
+        <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      </div>
+
+      <!-- Department Filter -->
+      <div>
+        <select
+          id="personnelDeptFilter"
+          class="w-full h-8 px-2 text-xs rounded-md border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#00529B] focus:border-[#00529B] transition"
+        >
+          <option value="ALL">All Departments (All)</option>
+          {% for d in departments %}
+          <option value="{{ d.code }}">[{{ d.code }}] {{ d.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Role Filter -->
+      <div>
+        <select
+          id="personnelRoleFilter"
+          class="w-full h-8 px-2 text-xs rounded-md border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#00529B] focus:border-[#00529B] transition"
+        >
+          <option value="ALL">All Roles</option>
+          <option value="SUPERVISOR">Supervisors</option>
+          <option value="STORE_OFFICER">Store Officers (NSS)</option>
+          <option value="STAFF">Standard Staff</option>
+        </select>
+      </div>
+
+      <!-- Sort Filter -->
+      <div>
+        <select
+          id="personnelSort"
+          class="w-full h-8 px-2 text-xs rounded-md border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#00529B] focus:border-[#00529B] transition"
+        >
+          <option value="name-asc">Sort: Name (A &rarr; Z)</option>
+          <option value="name-desc">Sort: Name (Z &rarr; A)</option>
+          <option value="id-asc">Sort: Staff ID</option>
+          <option value="dept-asc">Sort: Department</option>
+          <option value="role-asc">Sort: Role</option>
+        </select>
+      </div>
+    </div>
   </div>
+
+  <!-- Table Body -->
   <div class="overflow-x-auto">
-    <table class="w-full text-left border-collapse">
+    <table id="personnelTable" class="w-full text-left border-collapse">
       <thead>
         <tr class="border-b border-slate-200 text-[11px] font-medium text-slate-500 bg-slate-50/60">
-          <th class="py-2.5 px-4">Staff / NSS ID</th>
+          <th class="py-2.5 px-4 w-36">Staff / NSS ID</th>
           <th class="py-2.5 px-4">Full Name</th>
           <th class="py-2.5 px-4">Department</th>
           <th class="py-2.5 px-4">Designation</th>
           <th class="py-2.5 px-4">Email</th>
-          <th class="py-2.5 px-4">Role</th>
+          <th class="py-2.5 px-4 text-center w-28">Role</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-200/70 text-xs">
         {% for u in all_users %}
-        <tr class="hover:bg-slate-50/80">
+        <tr
+          class="personnel-row hover:bg-slate-50/80 transition-colors"
+          data-name="{{ u.full_name|lower }}"
+          data-staff-id="{{ u.staff_id|lower }}"
+          data-dept="{{ u.department.code }}"
+          data-title="{{ (u.job_title or '')|lower }}"
+          data-email="{{ (u.email or '')|lower }}"
+          data-role="{{ u.role }}"
+        >
           <td class="py-2.5 px-4 font-mono font-medium text-slate-900">{{ u.staff_id }}</td>
           <td class="py-2.5 px-4 font-medium text-slate-900">{{ u.full_name }}</td>
           <td class="py-2.5 px-4 text-slate-600">
-            <span class="font-mono text-[11px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded mr-1">{{ u.department.code }}</span>
+            <span class="font-mono text-[11px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded mr-1 font-semibold">{{ u.department.code }}</span>
             <span>{{ u.department.name }}</span>
           </td>
-          <td class="py-2.5 px-4 text-slate-500">{{ u.job_title }}</td>
+          <td class="py-2.5 px-4 text-slate-500">{{ u.job_title or '—' }}</td>
           <td class="py-2.5 px-4 text-slate-500">{{ u.email }}</td>
-          <td class="py-2.5 px-4">
-            <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
+          <td class="py-2.5 px-4 text-center">
+            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold {% if u.role == 'SUPERVISOR' %}bg-sky-50 text-[#00529B] border border-sky-200{% elif u.role == 'STORE_OFFICER' %}bg-indigo-50 text-indigo-700 border border-indigo-200{% else %}bg-slate-100 text-slate-700 border border-slate-200{% endif %}">
               {{ u.role.replace('_', ' ') }}
             </span>
           </td>
         </tr>
         {% endfor %}
+        <tr id="personnelEmptyRow" style="display: none;">
+          <td colspan="6" class="py-8 px-4 text-center text-slate-500 text-xs bg-slate-50/40">
+            <div class="flex flex-col items-center justify-center gap-1.5">
+              <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              <span class="font-medium">No personnel found matching the current filters.</span>
+              <button type="button" onclick="document.getElementById('personnelSearch').value=''; document.getElementById('personnelDeptFilter').value='ALL'; document.getElementById('personnelRoleFilter').value='ALL'; document.getElementById('personnelDeptFilter').dispatchEvent(new Event('change'));" class="text-[#00529B] hover:underline font-semibold text-xs mt-1">Reset All Filters</button>
+            </div>
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>
+
+  <!-- Pagination Footer Bar -->
+  <div class="px-4 py-2.5 border-t border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+    <div class="flex items-center gap-2">
+      <span class="text-[11px] text-slate-500">Rows per page:</span>
+      <select id="personnelPageSize" class="h-7 px-1.5 text-xs rounded border border-slate-300 bg-white text-slate-700">
+        <option value="8" selected>8</option>
+        <option value="15">15</option>
+        <option value="25">25</option>
+        <option value="ALL">All</option>
+      </select>
+    </div>
+    <div class="flex items-center gap-3">
+      <span id="personnelPageIndicator" class="text-[11px] font-medium text-slate-600">Page 1 of 1</span>
+      <div class="flex items-center gap-1">
+        <button
+          type="button"
+          id="personnelPrevBtn"
+          class="h-7 px-2.5 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 font-medium text-xs flex items-center gap-1 transition"
+        >
+          &larr; Prev
+        </button>
+        <button
+          type="button"
+          id="personnelNextBtn"
+          class="h-7 px-2.5 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 font-medium text-xs flex items-center gap-1 transition"
+        >
+          Next &rarr;
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- Modal: Register Personnel -->

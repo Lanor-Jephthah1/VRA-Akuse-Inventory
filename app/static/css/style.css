@@ -1,60 +1,221 @@
+/* Universal Mobile Responsiveness & Viewport Lock */
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+html, body {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  touch-action: manipulation;
+}
 body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    }
-    .tabular-nums { font-variant-numeric: tabular-nums; }
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.tabular-nums { font-variant-numeric: tabular-nums; }
 
-    /* Refined Enterprise Animations */
-    @keyframes pageEnter {
-      0% {
-        opacity: 0;
-        transform: translateY(6px);
-      }
-      100% {
-        opacity: 1;
-        transform: none;
-      }
-    }
-    @keyframes modalScaleIn {
-      from {
-        opacity: 0;
-        transform: scale(0.96) translateY(6px);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-      }
-    }
-    @keyframes pulseDot {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.35); opacity: 0.65; }
-    }
-    .animate-page {
-      animation: pageEnter 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-    .modal-panel {
-      animation: modalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-    .status-dot-pulse {
-      animation: pulseDot 2.2s ease-in-out infinite;
-    }
-    /* Crisp card & row hover elevation */
-    .corp-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 0.5rem;
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-      transition: box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .corp-card-hover:hover {
-      border-color: #cbd5e1;
-      box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.06);
-      transform: translateY(-1px);
-    }
-    tbody tr {
-      transition: background-color 0.14s ease;
-    }
-    .nav-item {
-      transition: background-color 0.15s ease, color 0.15s ease;
-    }
+/* Prevent iOS Safari from automatically zooming in when focusing form inputs on phones */
+@media screen and (max-width: 640px) {
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="number"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Refined Enterprise Animations (No transforms on main container to avoid containing block issues) */
+@keyframes pageEnter {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.65; }
+}
+.animate-page {
+  animation: pageEnter 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.modal-panel {
+  animation: modalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.status-dot-pulse {
+  animation: pulseDot 2.2s ease-in-out infinite;
+}
+/* Crisp card & row hover elevation */
+.corp-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  transition: box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.corp-card-hover:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
+}
+tbody tr {
+  transition: background-color 0.14s ease;
+}
+.nav-item {
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* Sleek Modern Scrollbars (Thinner, clean, subtle) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.overflow-y-auto, .overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+/* Subtle, dignified VRA hydro-engineering ambient backdrop for homepage/dashboard */
+.dashboard-ambient-bg {
+  background-color: #f8fbfe;
+  background-image:
+    radial-gradient(at 0% 0%, rgba(0, 82, 155, 0.045) 0px, transparent 55%),
+    radial-gradient(at 100% 0%, rgba(0, 114, 206, 0.04) 0px, transparent 50%),
+    radial-gradient(#d6e6f5 0.75px, transparent 0.75px);
+  background-size: 100% 100%, 100% 100%, 20px 20px;
+  background-attachment: fixed;
+}
+
+
+/* Print Sheet Styling - Standard Clean A4 Page Format */
+@page {
+  size: A4 portrait;
+  margin: 20mm 15mm 16mm 15mm;
+}
+@media print {
+  html, body {
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .no-print { display: none !important; }
+  
+  .print-sheet {
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  /* Standard executive header positioning with balanced top breathing room */
+  .voucher-header {
+    padding-top: 4mm !important;
+    padding-bottom: 3.5mm !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  .voucher-meta {
+    padding-top: 3.5mm !important;
+    padding-bottom: 3.5mm !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Multi-item table pagination: Table header repeats at top of subsequent pages */
+  table.voucher-table {
+    width: 100% !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    border-collapse: collapse !important;
+  }
+  table.voucher-table thead {
+    display: table-header-group !important;
+  }
+  table.voucher-table tbody tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  table.voucher-table th,
+  table.voucher-table td {
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+  }
+  table.voucher-table th {
+    font-weight: 500 !important;
+    color: #475569 !important;
+  }
+  table.voucher-table td,
+  table.voucher-table td * {
+    font-weight: 400 !important;
+  }
+
+  /* Compliance box & Signatures stay intact together and do not slice awkwardly across pages */
+  .voucher-compliance-box {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-top: 12px !important;
+  }
+  .voucher-signatures {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-top: 10px !important;
+  }
+  .voucher-footer {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  }
+}

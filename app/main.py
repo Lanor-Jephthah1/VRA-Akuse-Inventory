@@ -58,24 +58,26 @@ def get_common_context(
 
     if current_user.role == "STAFF":
         pending_count = (
-            db.query(Requisition)
+            db.query(Requisition.siv_number)
             .filter(
                 Requisition.requester_id == current_user.id,
                 Requisition.status == "PENDING_APPROVAL",
             )
+            .distinct()
             .count()
         )
         approved_ready_count = (
-            db.query(Requisition)
+            db.query(Requisition.siv_number)
             .filter(
                 Requisition.requester_id == current_user.id,
                 Requisition.status == "APPROVED",
             )
+            .distinct()
             .count()
         )
     else:
-        pending_count = db.query(Requisition).filter(Requisition.status == "PENDING_APPROVAL").count()
-        approved_ready_count = db.query(Requisition).filter(Requisition.status == "APPROVED").count()
+        pending_count = db.query(Requisition.siv_number).filter(Requisition.status == "PENDING_APPROVAL").distinct().count()
+        approved_ready_count = db.query(Requisition.siv_number).filter(Requisition.status == "APPROVED").distinct().count()
 
     low_stock_count = (
         db.query(InventoryItem)
@@ -110,12 +112,24 @@ def login_page(
         .order_by(User.id)
         .all()
     )
+    import json
+    demo_accounts_json = json.dumps([
+        {
+            "staffId": acc.staff_id,
+            "name": acc.full_name,
+            "dept": acc.department.code,
+            "role": acc.role,
+            "roleLabel": acc.role.replace("_", " "),
+        }
+        for acc in demo_accounts
+    ])
     return templates.TemplateResponse(
         request,
         "login.html",
         {
             "request": request,
             "demo_accounts": demo_accounts,
+            "demo_accounts_json": demo_accounts_json,
             "error": error,
             "msg": msg,
             "mode": mode if mode in ["STAFF", "SUPERVISOR"] else "STAFF",
@@ -213,7 +227,34 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     if current_user.role == "STAFF":
         req_query = req_query.filter(Requisition.requester_id == current_user.id)
 
-    recent_requisitions = req_query.order_by(Requisition.requested_at.desc()).limit(8).all()
+    raw_recent = req_query.order_by(Requisition.requested_at.desc(), Requisition.id.desc()).all()
+    from collections import OrderedDict
+    siv_map = OrderedDict()
+    for r in raw_recent:
+        if r.siv_number not in siv_map:
+            siv_map[r.siv_number] = []
+        siv_map[r.siv_number].append(r)
+
+    recent_requisitions = []
+    for siv_no, item_rows in list(siv_map.items())[:8]:
+        primary = item_rows[0]
+        recent_requisitions.append({
+            "id": primary.id,
+            "siv_number": siv_no,
+            "requester": primary.requester,
+            "requester_id": primary.requester_id,
+            "department": primary.department,
+            "requested_at": primary.requested_at,
+            "job_card_ref": primary.job_card_ref,
+            "purpose": primary.purpose,
+            "status": primary.status,
+            "line_items": item_rows,
+            "item_count": len(item_rows),
+            "primary": primary,
+            "item": primary.item,
+            "quantity": sum(it.quantity for it in item_rows),
+            "is_returnable": any(it.is_returnable for it in item_rows),
+        })
 
     recent_transactions = (
         db.query(StockTransaction)
@@ -421,12 +462,43 @@ def requisitions_page(
     if status_filter:
         query = query.filter(Requisition.status == status_filter)
 
-    requisitions = query.order_by(Requisition.requested_at.desc()).all()
-    items = db.query(InventoryItem).order_by(InventoryItem.name).all()
+    raw_requisitions = query.order_by(Requisition.requested_at.desc(), Requisition.id.desc()).all()
+
+    # Group by siv_number to bundle multi-item orders into one clean entry
+    from collections import OrderedDict
+    siv_map = OrderedDict()
+    for r in raw_requisitions:
+        if r.siv_number not in siv_map:
+            siv_map[r.siv_number] = []
+        siv_map[r.siv_number].append(r)
+
+    grouped_requisitions = []
+    for siv_no, item_rows in siv_map.items():
+        primary = item_rows[0]
+        grouped_requisitions.append({
+            "id": primary.id,
+            "siv_number": siv_no,
+            "requester": primary.requester,
+            "requester_id": primary.requester_id,
+            "department": primary.department,
+            "requested_at": primary.requested_at,
+            "job_card_ref": primary.job_card_ref,
+            "purpose": primary.purpose,
+            "status": primary.status,
+            "line_items": item_rows,
+            "item_count": len(item_rows),
+            "primary": primary,
+            "item": primary.item,
+            "quantity": sum(it.quantity for it in item_rows),
+            "is_returnable": any(it.is_returnable for it in item_rows),
+        })
+
+    items = db.query(InventoryItem).filter(InventoryItem.quantity_on_hand > 0).order_by(InventoryItem.name).all()
 
     ctx.update(
         {
-            "requisitions": requisitions,
+            "requisitions": grouped_requisitions,
+            "raw_requisitions": raw_requisitions,
             "items": items,
             "status_filter": status_filter or "",
             "scope": scope or ("mine" if current_user.role == "STAFF" else "all"),
@@ -436,45 +508,76 @@ def requisitions_page(
 
 
 @app.post("/requisitions/create")
-def create_requisition(
+async def create_requisition(
     request: Request,
-    item_id: int = Form(...),
-    quantity: int = Form(...),
-    purpose: str = Form(...),
-    job_card_ref: str = Form(""),
-    is_returnable: Optional[str] = Form(None),
-    expected_return_date: str = Form(""),
     db: Session = Depends(get_db),
 ):
     current_user = get_authenticated_user(request, db)
     if not current_user:
         return RedirectResponse(url="/login", status_code=303)
 
-    item = db.query(InventoryItem).filter(InventoryItem.id == item_id).first()
-    if not item:
-        return RedirectResponse(url="/requisitions?msg=Item+not+found", status_code=303)
+    form = await request.form()
+    job_card_ref = str(form.get("job_card_ref") or "").strip() or None
+    purpose = str(form.get("purpose") or "").strip()
+    if not purpose:
+        return RedirectResponse(url="/requisitions?msg=Please+provide+an+operational+purpose", status_code=303)
 
-    count = db.query(Requisition).count() + 1
-    siv_number = f"SIV-AK-{datetime.utcnow().year}-{count:04d}"
+    item_id_list = form.getlist("item_ids")
+    if not item_id_list and form.get("item_id"):
+        item_id_list = [form.get("item_id")]
 
-    returnable_flag = True if (is_returnable == "on" or item.item_type == "ASSET") else False
+    qty_list = form.getlist("quantities")
+    if not qty_list and form.get("quantity"):
+        qty_list = [form.get("quantity")]
 
-    req = Requisition(
-        siv_number=siv_number,
-        requester_id=current_user.id,
-        department_id=current_user.department_id,
-        item_id=item.id,
-        quantity=quantity,
-        purpose=purpose.strip(),
-        job_card_ref=job_card_ref.strip() or None,
-        is_returnable=returnable_flag,
-        expected_return_date=expected_return_date.strip() or None,
-        status="PENDING_APPROVAL",
-    )
-    db.add(req)
+    if not item_id_list:
+        return RedirectResponse(url="/requisitions?msg=Please+select+at+least+one+item", status_code=303)
+
+    distinct_siv_count = db.query(Requisition.siv_number).distinct().count()
+    siv_number = f"SIV-AK-{datetime.utcnow().year}-{distinct_siv_count + 1:04d}"
+    expected_return_date = str(form.get("expected_return_date") or "").strip() or None
+    now = datetime.utcnow()
+
+    items_created = 0
+    for idx, raw_item_id in enumerate(item_id_list):
+        if not raw_item_id:
+            continue
+        try:
+            i_id = int(raw_item_id)
+            qty = int(qty_list[idx]) if idx < len(qty_list) else 1
+            if qty < 1:
+                qty = 1
+        except (ValueError, TypeError):
+            continue
+
+        item = db.query(InventoryItem).filter(InventoryItem.id == i_id).first()
+        if not item:
+            continue
+
+        returnable_flag = True if (item.item_type == "ASSET" or form.get("is_returnable") == "on") else False
+
+        req = Requisition(
+            siv_number=siv_number,
+            requester_id=current_user.id,
+            department_id=current_user.department_id,
+            item_id=item.id,
+            quantity=qty,
+            purpose=purpose,
+            job_card_ref=job_card_ref,
+            is_returnable=returnable_flag,
+            expected_return_date=expected_return_date,
+            status="PENDING_APPROVAL",
+            requested_at=now,
+        )
+        db.add(req)
+        items_created += 1
+
+    if items_created == 0:
+        return RedirectResponse(url="/requisitions?msg=No+valid+items+selected", status_code=303)
+
     db.commit()
     return RedirectResponse(
-        url=f"/requisitions?msg=Submitted+Requisition+{siv_number}+for+Supervisor+Approval",
+        url=f"/requisitions?msg=Submitted+Requisition+{siv_number}+({items_created}+items)+for+Supervisor+Approval",
         status_code=303,
     )
 
@@ -495,20 +598,17 @@ def approve_or_reject_requisition(
     if not req:
         return RedirectResponse(url="/requisitions?msg=Requisition+not+found", status_code=303)
 
-    if decision == "APPROVE":
-        req.status = "APPROVED"
-        req.approved_by_id = current_user.id
-        req.approved_at = datetime.utcnow()
-        req.supervisor_remarks = supervisor_remarks.strip() or "Approved for store issuance."
-        msg = f"Requisition+{req.siv_number}+APPROVED+by+{current_user.full_name}"
-    else:
-        req.status = "REJECTED"
-        req.approved_by_id = current_user.id
-        req.approved_at = datetime.utcnow()
-        req.supervisor_remarks = supervisor_remarks.strip() or "Declined by supervisor."
-        msg = f"Requisition+{req.siv_number}+declined"
+    now = datetime.utcnow()
+    remarks = supervisor_remarks.strip() or ("Approved for store issuance." if decision == "APPROVE" else "Declined by supervisor.")
+    all_reqs = db.query(Requisition).filter(Requisition.siv_number == req.siv_number).all()
+    for r in all_reqs:
+        r.status = "APPROVED" if decision == "APPROVE" else "REJECTED"
+        r.approved_by_id = current_user.id
+        r.approved_at = now
+        r.supervisor_remarks = remarks
 
     db.commit()
+    msg = f"Requisition+{req.siv_number}+APPROVED+by+{current_user.full_name}" if decision == "APPROVE" else f"Requisition+{req.siv_number}+declined"
     return RedirectResponse(url=f"/requisitions?msg={msg}", status_code=303)
 
 
@@ -522,40 +622,49 @@ def issue_requisition_stock(
     if not current_user or current_user.role not in ["STORE_OFFICER", "SUPERVISOR"]:
         return RedirectResponse(url="/requisitions?msg=Store+Officer+or+Supervisor+required", status_code=303)
 
-    req = (
-        db.query(Requisition)
-        .options(joinedload(Requisition.item), joinedload(Requisition.requester), joinedload(Requisition.department))
-        .filter(Requisition.id == req_id)
-        .first()
-    )
+    req = db.query(Requisition).filter(Requisition.id == req_id).first()
     if not req or req.status != "APPROVED":
         return RedirectResponse(url="/requisitions?msg=Requisition+must+be+APPROVED+before+issuing", status_code=303)
 
-    if req.item.quantity_on_hand < req.quantity:
-        return RedirectResponse(
-            url=f"/requisitions?msg=Insufficient+Stock!+Only+{req.item.quantity_on_hand}+available+for+{req.item.item_code}",
-            status_code=303,
-        )
-
-    req.item.quantity_on_hand -= req.quantity
-    req.status = "ISSUED"
-    req.issued_by_id = current_user.id
-    req.issued_at = datetime.utcnow()
-
-    tx = StockTransaction(
-        voucher_no=req.siv_number,
-        transaction_type="ISSUE_SIV",
-        item_id=req.item.id,
-        quantity_change=-req.quantity,
-        balance_after=req.item.quantity_on_hand,
-        performed_by_id=current_user.id,
-        recipient_or_supplier=f"{req.requester.full_name} ({req.department.code})",
-        reference_note=f"{req.purpose} [Job/Ref: {req.job_card_ref or 'N/A'}]",
+    all_reqs = (
+        db.query(Requisition)
+        .options(joinedload(Requisition.item), joinedload(Requisition.requester), joinedload(Requisition.department))
+        .filter(Requisition.siv_number == req.siv_number, Requisition.status == "APPROVED")
+        .all()
     )
-    db.add(tx)
+
+    # Check stock for all items
+    for r in all_reqs:
+        if r.item.quantity_on_hand < r.quantity:
+            return RedirectResponse(
+                url=f"/requisitions?msg=Insufficient+Stock!+Only+{r.item.quantity_on_hand}+available+for+{r.item.item_code}",
+                status_code=303,
+            )
+
+    now = datetime.utcnow()
+    issued_count = 0
+    for r in all_reqs:
+        r.item.quantity_on_hand -= r.quantity
+        r.status = "ISSUED"
+        r.issued_by_id = current_user.id
+        r.issued_at = now
+
+        tx = StockTransaction(
+            voucher_no=r.siv_number,
+            transaction_type="ISSUE_SIV",
+            item_id=r.item.id,
+            quantity_change=-r.quantity,
+            balance_after=r.item.quantity_on_hand,
+            performed_by_id=current_user.id,
+            recipient_or_supplier=f"{r.requester.full_name} ({r.department.code})",
+            reference_note=f"{r.purpose} [Job/Ref: {r.job_card_ref or 'N/A'}]",
+        )
+        db.add(tx)
+        issued_count += 1
+
     db.commit()
     return RedirectResponse(
-        url=f"/requisitions?msg=Issued+{req.quantity}+{req.item.unit}+on+{req.siv_number}+to+{req.requester.full_name}",
+        url=f"/requisitions?msg=Issued+{issued_count}+items+on+{req.siv_number}+to+{req.requester.full_name}",
         status_code=303,
     )
 
@@ -619,7 +728,7 @@ def cancel_pending_requisition(
         )
 
     siv_no = req.siv_number
-    db.delete(req)
+    db.query(Requisition).filter(Requisition.siv_number == siv_no, Requisition.status == "PENDING_APPROVAL").delete()
     db.commit()
     return RedirectResponse(
         url=f"/requisitions?msg=Cancelled+pending+requisition+{siv_no}",
@@ -648,12 +757,37 @@ def printable_siv_voucher(req_id: int, request: Request, db: Session = Depends(g
     if not req:
         raise HTTPException(status_code=404, detail="Voucher not found")
 
+    # If this requisition is part of a batch with the same SIV number or Work Order / Job Ref, bundle them on one voucher
+    items_list = (
+        db.query(Requisition)
+        .options(
+            joinedload(Requisition.item),
+            joinedload(Requisition.requester),
+            joinedload(Requisition.department),
+        )
+        .filter(
+            (Requisition.siv_number == req.siv_number) |
+            (
+                (Requisition.requester_id == req.requester_id) &
+                (Requisition.job_card_ref == req.job_card_ref) &
+                (Requisition.job_card_ref.isnot(None)) &
+                (Requisition.job_card_ref != "") &
+                (Requisition.job_card_ref != "Standard Departmental Request")
+            )
+        )
+        .order_by(Requisition.id)
+        .all()
+    )
+    if not items_list:
+        items_list = [req]
+
     return templates.TemplateResponse(
         request,
         "voucher_print.html",
         {
             "request": request,
             "req": req,
+            "items_list": items_list,
             "printed_at": datetime.utcnow().strftime("%d %b %Y, %H:%M UTC"),
         },
     )

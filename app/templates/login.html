@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="overflow-x-hidden">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign In | VRA Akuse Inventory</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Sign In | Volta River Authority • Akuse Inventory</title>
 
   <!-- OpenGraph / WhatsApp Link Preview Metadata -->
   <meta property="og:type" content="website" />
@@ -24,55 +24,48 @@
   <meta name="twitter:image" content="https://vra-akuse-inventory.vercel.app/static/vra_logo.png" />
 
   <link rel="icon" type="image/png" href="/static/vra_logo.png" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      -webkit-font-smoothing: antialiased;
-    }
-  </style>
+  <script src="/static/js/tailwind.min.js"></script>
+  <link rel="stylesheet" href="/static/css/style.css" />
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-center items-center px-4 py-10">
+<body data-login-mode="{{ mode or 'STAFF' }}" class="min-h-screen w-full max-w-full bg-slate-100 text-slate-900 flex flex-col justify-center items-center px-3 sm:px-4 py-6 sm:py-8 overflow-x-hidden antialiased selection:bg-[#00529B] selection:text-white">
 
-  <div class="w-full max-w-[390px]">
-    <!-- Centered VRA Header -->
-    <div class="text-center mb-6">
-      <div class="inline-flex items-center justify-center bg-white border border-slate-200/90 rounded-lg px-4 py-2.5 shadow-sm mb-3.5">
-        <img src="/static/vra_logo.png" alt="Volta River Authority" class="h-10 w-auto object-contain" />
+  <div class="w-full max-w-[400px] mx-auto animate-page">
+    
+    <!-- Centered Authority Brand Header -->
+    <div class="text-center mb-5">
+      <div class="inline-flex items-center justify-center bg-white border border-slate-200 rounded-xl p-3 shadow-xs mb-3">
+        <img src="/static/vra_logo.png" alt="Volta River Authority" class="h-11 w-auto object-contain" />
       </div>
-      <h1 class="text-base font-semibold text-slate-900 tracking-tight">Volta River Authority</h1>
-      <p class="text-xs text-slate-500 mt-0.5">Kpong Generating Station, Akuse</p>
+      <h1 class="text-base font-bold text-slate-900 tracking-tight">Volta River Authority</h1>
     </div>
 
-    <!-- Centered Login Card -->
-    <div class="bg-white border border-slate-200 rounded-lg shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6">
-
-      <!-- Staff vs Supervisor Segmented Switch -->
-      <div class="grid grid-cols-2 p-1 bg-slate-100 rounded-md border border-slate-200/80 mb-5">
+    <!-- Centered Card -->
+    <div class="bg-white border border-slate-200 rounded-xl shadow-[0_2px_12px_rgba(15,23,42,0.04)] p-5 sm:p-7">
+      
+      <!-- Staff vs Supervisor Switcher -->
+      <div class="grid grid-cols-2 p-1 bg-slate-100 rounded-lg border border-slate-200/90 mb-5">
         <button
           type="button"
           id="tabStaff"
           onclick="setLoginMode('STAFF')"
-          class="h-8 rounded text-xs font-medium transition-all"
+          class="h-8 rounded-md text-xs font-medium transition-all"
         >
-          Staff
+          Staff Account
         </button>
         <button
           type="button"
           id="tabSupervisor"
           onclick="setLoginMode('SUPERVISOR')"
-          class="h-8 rounded text-xs font-medium transition-all"
+          class="h-8 rounded-md text-xs font-medium transition-all"
         >
-          Supervisor
+          Supervisor / Store
         </button>
       </div>
 
       {% if error %}
-      <div class="mb-4 rounded-md bg-slate-100 border border-slate-300 px-3 py-2.5 text-xs text-slate-800 leading-relaxed">
-        {{ error }}
+      <div class="mb-5 rounded-md bg-rose-50 border border-rose-200 p-3 text-xs text-rose-800 flex items-start gap-2.5">
+        <svg class="w-4 h-4 text-rose-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        <div class="leading-relaxed">{{ error }}</div>
       </div>
       {% endif %}
 
@@ -80,8 +73,8 @@
         <input type="hidden" name="login_mode" id="loginModeInput" value="{{ mode or 'STAFF' }}" />
 
         <div>
-          <label for="identifierInput" id="identifierLabel" class="block text-xs font-medium text-slate-700 mb-1.5">
-            Staff ID or Email
+          <label for="identifierInput" id="identifierLabel" class="block text-xs font-semibold text-slate-700 mb-1.5">
+            Staff ID or Official Email
           </label>
           <input
             type="text"
@@ -95,33 +88,42 @@
         </div>
 
         <div>
-          <label for="passwordInput" class="block text-xs font-medium text-slate-700 mb-1.5">
-            Password
-          </label>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="passwordInput" class="block text-xs font-semibold text-slate-700">
+              Password
+            </label>
+            <span class="text-[11px] text-slate-400">Default: vra123</span>
+          </div>
           <input
             type="password"
             name="password"
             id="passwordInput"
             required
-            placeholder="Enter password"
+            placeholder="Enter account password"
             class="w-full h-9 rounded-md border border-slate-300 bg-white px-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00529B]/15 focus:border-[#00529B] transition-all"
           />
         </div>
 
-        <button
-          type="submit"
-          id="submitBtn"
-          class="w-full h-9 bg-[#00529B] hover:bg-[#003d75] active:scale-[0.99] text-white font-medium text-xs rounded-md shadow-sm transition-all flex items-center justify-center"
-        >
-          Sign In
-        </button>
+        <div class="pt-1 flex items-center justify-between">
+          <button
+            type="submit"
+            id="submitBtn"
+            class="h-8 px-5 bg-[#00529B] hover:bg-[#003d75] active:scale-[0.99] text-white font-semibold text-xs rounded-md shadow-xs transition-all flex items-center justify-center gap-1.5"
+          >
+            <span>Sign In</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </button>
+        </div>
       </form>
 
       <!-- Filtered Quick Demo Selector -->
-      <div class="mt-5 pt-4 border-t border-slate-100">
-        <label class="block text-[11px] text-slate-400 mb-1.5">
-          Quick demo account (Password: <span class="font-mono text-slate-500">vra123</span>)
-        </label>
+      <div class="mt-6 pt-5 border-t border-slate-100">
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="block text-[11px] font-medium text-slate-500">
+            Inspection &amp; Demo Account Switcher
+          </label>
+          <span class="text-[10px] text-slate-400 font-mono">Password: vra123</span>
+        </div>
         <select
           id="quickDemoSelect"
           onchange="if(this.value) fillLogin(this.value)"
@@ -130,168 +132,18 @@
           <option value="">Select account to sign in...</option>
         </select>
       </div>
+
     </div>
 
-    <div class="text-center mt-5 text-[11px] text-slate-400">
-      Inventory &amp; Requisition Portal • VRA Akuse
+    <!-- Below Login Card: Operational Unit & Legal Notice -->
+    <div class="text-center mt-5 space-y-1">
+      <p class="text-xs font-semibold text-slate-700 tracking-tight">Kpong Generating Station, Akuse &bull; Stores &amp; Inventory Portal</p>
+      <p class="text-[11px] text-slate-400">Official Departmental Stores &bull; Akuse Operational Base</p>
     </div>
+
   </div>
 
-  <script>
-    const allDemoAccounts = [
-      {% for acc in demo_accounts %}
-      {
-        staffId: "{{ acc.staff_id }}",
-        name: "{{ acc.full_name }}",
-        dept: "{{ acc.department.code }}",
-        role: "{{ acc.role }}",
-        roleLabel: "{{ acc.role.replace('_', ' ') }}"
-      },
-      {% endfor %}
-    ];
-
-    let currentMode = "{{ mode or 'STAFF' }}";
-    let activeDropdownMenu = null;
-    let activeDropdownBtn = null;
-    let updateCustomSelectLabel = null;
-
-    function closeCustomDropdown() {
-      if (activeDropdownMenu) {
-        activeDropdownMenu.remove();
-        activeDropdownMenu = null;
-      }
-      if (activeDropdownBtn) {
-        const icon = activeDropdownBtn.querySelector('.dd-chevron');
-        if (icon) icon.classList.remove('rotate-180');
-        activeDropdownBtn = null;
-      }
-    }
-
-    function setLoginMode(mode) {
-      currentMode = mode;
-      document.getElementById('loginModeInput').value = mode;
-      const tabStaff = document.getElementById('tabStaff');
-      const tabSupervisor = document.getElementById('tabSupervisor');
-      const identifierInput = document.getElementById('identifierInput');
-
-      if (mode === 'SUPERVISOR') {
-        tabSupervisor.className = 'h-8 rounded text-xs font-semibold bg-white text-[#00529B] shadow-sm border border-slate-200/80 transition-all';
-        tabStaff.className = 'h-8 rounded text-xs font-medium text-slate-600 hover:text-slate-900 transition-all';
-        identifierInput.placeholder = 'e.g. VRA-AK-1004';
-      } else {
-        tabStaff.className = 'h-8 rounded text-xs font-semibold bg-white text-[#00529B] shadow-sm border border-slate-200/80 transition-all';
-        tabSupervisor.className = 'h-8 rounded text-xs font-medium text-slate-600 hover:text-slate-900 transition-all';
-        identifierInput.placeholder = 'e.g. VRA-AK-3041';
-      }
-
-      // Filter demo dropdown options to match selected login tab
-      const select = document.getElementById('quickDemoSelect');
-      select.innerHTML = '';
-      const placeholderOpt = document.createElement('option');
-      placeholderOpt.value = '';
-      placeholderOpt.textContent = mode === 'SUPERVISOR'
-        ? 'Select a Supervisor account...'
-        : 'Select a Staff / Store account...';
-      select.appendChild(placeholderOpt);
-
-      allDemoAccounts
-        .filter(a => mode === 'SUPERVISOR' ? a.role === 'SUPERVISOR' : a.role !== 'SUPERVISOR')
-        .forEach(a => {
-          const opt = document.createElement('option');
-          opt.value = a.staffId;
-          opt.textContent = `${a.name} (${a.dept} / ${a.roleLabel})`;
-          select.appendChild(opt);
-        });
-
-      closeCustomDropdown();
-      if (updateCustomSelectLabel) updateCustomSelectLabel();
-    }
-
-    function fillLogin(staffId) {
-      document.getElementById('identifierInput').value = staffId;
-      document.getElementById('passwordInput').value = 'vra123';
-      document.getElementById('loginForm').submit();
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const select = document.getElementById('quickDemoSelect');
-      select.classList.add('sr-only');
-      select.setAttribute('tabindex', '-1');
-
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'w-full h-8 bg-slate-50 hover:bg-slate-100/80 rounded-md border border-slate-200 px-2.5 text-xs text-slate-600 flex items-center justify-between gap-2 text-left focus:outline-none focus:border-[#00529B] transition-all';
-
-      const labelSpan = document.createElement('span');
-      labelSpan.className = 'truncate block';
-      updateCustomSelectLabel = () => {
-        const selOpt = select.options[select.selectedIndex];
-        labelSpan.textContent = selOpt ? selOpt.textContent.trim() : 'Select...';
-      };
-
-      const chevron = document.createElement('span');
-      chevron.className = 'dd-chevron text-slate-400 shrink-0 transition-transform duration-150';
-      chevron.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>`;
-
-      btn.appendChild(labelSpan);
-      btn.appendChild(chevron);
-      select.parentNode.insertBefore(btn, select.nextSibling);
-
-      setLoginMode(currentMode);
-
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (activeDropdownBtn === btn) {
-          closeCustomDropdown();
-          return;
-        }
-        closeCustomDropdown();
-        activeDropdownBtn = btn;
-        chevron.classList.add('rotate-180');
-
-        const rect = btn.getBoundingClientRect();
-        const menu = document.createElement('div');
-        menu.className = 'fixed z-[100] bg-white border border-slate-200 rounded-md shadow-lg py-1 text-xs max-h-56 overflow-y-auto';
-
-        const menuWidth = Math.min(Math.max(rect.width, 200), window.innerWidth - 20);
-        let leftPos = rect.left;
-        if (leftPos + menuWidth > window.innerWidth - 10) {
-          leftPos = Math.max(10, window.innerWidth - menuWidth - 10);
-        }
-        menu.style.width = `${menuWidth}px`;
-        menu.style.left = `${leftPos}px`;
-
-        const spaceBelow = window.innerHeight - rect.bottom;
-        if (spaceBelow < 220 && rect.top > 220) {
-          menu.style.bottom = `${window.innerHeight - rect.top + 4}px`;
-        } else {
-          menu.style.top = `${rect.bottom + 4}px`;
-        }
-
-        Array.from(select.options).forEach((opt, idx) => {
-          const item = document.createElement('button');
-          item.type = 'button';
-          const isSelected = idx === select.selectedIndex;
-          item.className = `w-full px-3 py-2 text-left flex items-center justify-between gap-2 transition-colors ${isSelected ? 'bg-slate-100/90 font-semibold text-[#00529B]' : 'text-slate-700 hover:bg-slate-50'}`;
-          item.innerHTML = `<span class="leading-snug break-words">${opt.textContent.trim()}</span>`;
-          item.addEventListener('click', (ev) => {
-            ev.stopPropagation();
-            select.selectedIndex = idx;
-            select.value = opt.value;
-            updateCustomSelectLabel();
-            closeCustomDropdown();
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-          });
-          menu.appendChild(item);
-        });
-
-        document.body.appendChild(menu);
-        activeDropdownMenu = menu;
-      });
-    });
-
-    document.addEventListener('click', closeCustomDropdown);
-    window.addEventListener('resize', closeCustomDropdown);
-  </script>
+  <script id="demoAccountsData" type="application/json">{{ demo_accounts_json | safe }}</script>
+  <script src="/static/js/login.js"></script>
 </body>
 </html>

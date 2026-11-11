@@ -31,11 +31,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Global Modal Centering & Viewport Lock Helper
 function relocateModalsToBody() {
+  let anyOpen = false;
   document.querySelectorAll('[id$="Modal"]').forEach(modal => {
     if (modal.parentNode !== document.body) {
       document.body.appendChild(modal);
     }
+    if (!modal.classList.contains('hidden')) {
+      anyOpen = true;
+      modal.scrollTop = 0;
+    }
   });
+  if (anyOpen) {
+    document.body.style.overflow = 'hidden';
+  }
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', relocateModalsToBody);
@@ -137,9 +145,9 @@ function initCustomSelects() {
 
       const rect = btn.getBoundingClientRect();
       const menu = document.createElement('div');
-      menu.className = 'fixed z-[100] bg-white border border-slate-200 rounded-md shadow-lg py-1 text-xs max-h-56 overflow-y-auto';
+      menu.className = 'fixed z-[100050] bg-white border border-slate-200 rounded-lg shadow-2xl py-1 pb-3 text-xs overflow-y-auto ring-1 ring-slate-900/10';
 
-      const menuWidth = Math.min(Math.max(rect.width, 190), window.innerWidth - 20);
+      const menuWidth = Math.min(Math.max(rect.width, 210), window.innerWidth - 20);
       let leftPos = rect.left;
       if (leftPos + menuWidth > window.innerWidth - 10) {
         leftPos = Math.max(10, window.innerWidth - menuWidth - 10);
@@ -147,11 +155,15 @@ function initCustomSelects() {
       menu.style.width = `${menuWidth}px`;
       menu.style.left = `${leftPos}px`;
 
-      const spaceBelow = window.innerHeight - rect.bottom;
-      if (spaceBelow < 220 && rect.top > 220) {
+      const spaceBelow = window.innerHeight - rect.bottom - 16;
+      const spaceAbove = rect.top - 16;
+
+      if (spaceBelow < 180 && spaceAbove > spaceBelow) {
         menu.style.bottom = `${window.innerHeight - rect.top + 4}px`;
+        menu.style.maxHeight = `${Math.max(120, Math.min(spaceAbove, 260))}px`;
       } else {
         menu.style.top = `${rect.bottom + 4}px`;
+        menu.style.maxHeight = `${Math.max(120, Math.min(spaceBelow, 260))}px`;
       }
 
       Array.from(select.options).forEach((opt, idx) => {
@@ -187,3 +199,197 @@ window.addEventListener('scroll', (e) => {
     closeCustomDropdown();
   }
 }, true);
+
+function printVoucher() {
+  window.print();
+}
+
+// Personnel Directory Filtering, Sorting, and Client Pagination
+function filterPersonnelByDept(deptCode) {
+  const deptSelect = document.getElementById('personnelDeptFilter');
+  if (deptSelect) {
+    deptSelect.value = deptCode;
+    deptSelect.dispatchEvent(new Event('change'));
+    const dirEl = document.getElementById('personnelDirectorySection');
+    if (dirEl) {
+      dirEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+}
+
+function initPersonnelDirectory() {
+  const table = document.getElementById('personnelTable');
+  if (!table) return;
+
+  const searchInput = document.getElementById('personnelSearch');
+  const deptFilter = document.getElementById('personnelDeptFilter');
+  const roleFilter = document.getElementById('personnelRoleFilter');
+  const sortSelect = document.getElementById('personnelSort');
+  const pageSizeSelect = document.getElementById('personnelPageSize');
+  const prevBtn = document.getElementById('personnelPrevBtn');
+  const nextBtn = document.getElementById('personnelNextBtn');
+  const pageIndicator = document.getElementById('personnelPageIndicator');
+  const countDisplay = document.getElementById('personnelCountDisplay');
+  const emptyRow = document.getElementById('personnelEmptyRow');
+
+  const rows = Array.from(table.querySelectorAll('tbody tr.personnel-row'));
+  let currentPage = 1;
+
+  function updateDirectory() {
+    const query = (searchInput?.value || '').trim().toLowerCase();
+    const selectedDept = deptFilter?.value || 'ALL';
+    const selectedRole = roleFilter?.value || 'ALL';
+    const sortBy = sortSelect?.value || 'name-asc';
+    const pageSize = pageSizeSelect?.value === 'ALL' ? 999999 : parseInt(pageSizeSelect?.value || '8', 10);
+
+    // 1. Filter rows
+    let visibleRows = rows.filter(row => {
+      const name = row.getAttribute('data-name') || '';
+      const staffId = row.getAttribute('data-staff-id') || '';
+      const title = row.getAttribute('data-title') || '';
+      const email = row.getAttribute('data-email') || '';
+      const dept = row.getAttribute('data-dept') || '';
+      const role = row.getAttribute('data-role') || '';
+
+      const matchesQuery = !query || name.includes(query) || staffId.includes(query) || title.includes(query) || email.includes(query);
+      const matchesDept = selectedDept === 'ALL' || dept === selectedDept;
+      const matchesRole = selectedRole === 'ALL' || role === selectedRole;
+
+      return matchesQuery && matchesDept && matchesRole;
+    });
+
+    // 2. Sort visible rows
+    visibleRows.sort((a, b) => {
+      if (sortBy === 'name-asc') {
+        return (a.getAttribute('data-name') || '').localeCompare(b.getAttribute('data-name') || '');
+      } else if (sortBy === 'name-desc') {
+        return (b.getAttribute('data-name') || '').localeCompare(a.getAttribute('data-name') || '');
+      } else if (sortBy === 'id-asc') {
+        return (a.getAttribute('data-staff-id') || '').localeCompare(b.getAttribute('data-staff-id') || '');
+      } else if (sortBy === 'dept-asc') {
+        return (a.getAttribute('data-dept') || '').localeCompare(b.getAttribute('data-dept') || '');
+      } else if (sortBy === 'role-asc') {
+        return (a.getAttribute('data-role') || '').localeCompare(b.getAttribute('data-role') || '');
+      }
+      return 0;
+    });
+
+    // Re-append sorted rows in order
+    const tbody = table.querySelector('tbody');
+    visibleRows.forEach(row => tbody.appendChild(row));
+    if (emptyRow) tbody.appendChild(emptyRow);
+
+    // 3. Paginate
+    const totalVisible = visibleRows.length;
+    const totalPages = Math.max(1, Math.ceil(totalVisible / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx = startIdx + pageSize;
+
+    rows.forEach(r => r.style.display = 'none');
+    visibleRows.slice(startIdx, endIdx).forEach(r => r.style.display = '');
+
+    if (emptyRow) {
+      emptyRow.style.display = totalVisible === 0 ? '' : 'none';
+    }
+
+    // 4. Update UI labels
+    if (countDisplay) {
+      if (totalVisible === 0) {
+        countDisplay.textContent = '0 personnel';
+      } else {
+        const displayStart = startIdx + 1;
+        const displayEnd = Math.min(endIdx, totalVisible);
+        countDisplay.textContent = `Showing ${displayStart}–${displayEnd} of ${totalVisible} personnel`;
+      }
+    }
+
+    if (pageIndicator) {
+      pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+    }
+
+    if (prevBtn) {
+      prevBtn.disabled = currentPage <= 1;
+      prevBtn.classList.toggle('opacity-40', currentPage <= 1);
+      prevBtn.classList.toggle('cursor-not-allowed', currentPage <= 1);
+    }
+
+    if (nextBtn) {
+      nextBtn.disabled = currentPage >= totalPages;
+      nextBtn.classList.toggle('opacity-40', currentPage >= totalPages);
+      nextBtn.classList.toggle('cursor-not-allowed', currentPage >= totalPages);
+    }
+  }
+
+  searchInput?.addEventListener('input', () => { currentPage = 1; updateDirectory(); });
+  deptFilter?.addEventListener('change', () => { currentPage = 1; updateDirectory(); });
+  roleFilter?.addEventListener('change', () => { currentPage = 1; updateDirectory(); });
+  sortSelect?.addEventListener('change', () => { currentPage = 1; updateDirectory(); });
+  pageSizeSelect?.addEventListener('change', () => { currentPage = 1; updateDirectory(); });
+
+  prevBtn?.addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      updateDirectory();
+    }
+  });
+
+  nextBtn?.addEventListener('click', () => {
+    currentPage++;
+    updateDirectory();
+  });
+
+  updateDirectory();
+}
+
+document.addEventListener('DOMContentLoaded', initPersonnelDirectory);
+
+// Dynamic Multi-Item Requisition Builder
+function toggleReturnDateField(checkbox) {
+  const container = document.getElementById('expectedReturnDateContainer');
+  if (container) {
+    if (checkbox.checked) {
+      container.classList.remove('hidden');
+    } else {
+      container.classList.add('hidden');
+    }
+  }
+}
+
+function updateRequisitionItemsSummary() {
+  const container = document.getElementById('requisitionItemsContainer');
+  const summary = document.getElementById('requisitionItemsSummary');
+  if (!container || !summary) return;
+  const rows = container.querySelectorAll('.requisition-item-row');
+  const count = rows.length;
+  summary.textContent = `${count} ${count === 1 ? 'item' : 'items'} in this requisition`;
+}
+
+function addRequisitionItemRow() {
+  const container = document.getElementById('requisitionItemsContainer');
+  const template = document.getElementById('requisitionRowTemplate');
+  if (!container || !template) return;
+  const clone = template.content.cloneNode(true);
+  container.appendChild(clone);
+  if (typeof initCustomSelects === 'function') {
+    initCustomSelects();
+  }
+  updateRequisitionItemsSummary();
+}
+
+function removeRequisitionItemRow(btn) {
+  const container = document.getElementById('requisitionItemsContainer');
+  if (!container) return;
+  const rows = container.querySelectorAll('.requisition-item-row');
+  if (rows.length <= 1) {
+    alert('A requisition must contain at least one item.');
+    return;
+  }
+  const row = btn.closest('.requisition-item-row');
+  if (row) {
+    row.remove();
+    updateRequisitionItemsSummary();
+  }
+}

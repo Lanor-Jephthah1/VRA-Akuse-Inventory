@@ -68,14 +68,38 @@
             <div class="text-[11px] text-slate-400">{{ r.requester.staff_id }} • {{ r.department.code }}</div>
           </td>
           <td class="py-3 px-4 align-top max-w-sm">
-            <div class="font-medium text-slate-900">{{ r.item.name }}</div>
-            <div class="text-[11px] text-slate-500 mt-0.5">{{ r.purpose }}</div>
-            {% if r.is_returnable %}
-              <div class="text-[11px] text-slate-400 mt-0.5">Returnable asset • Due {{ r.expected_return_date or 'on completion' }}</div>
+            {% if r.item_count > 1 %}
+              <div class="flex items-center gap-1.5 font-medium text-slate-900">
+                <span>{{ r.item_count }} Items Ordered</span>
+                <span class="text-[10px] font-normal px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">Consolidated SIV</span>
+              </div>
+              <ul class="mt-1 space-y-1 text-[11px] text-slate-600">
+                {% for line in r.line_items %}
+                <li class="flex items-center justify-between gap-3 border-l-2 border-slate-200 pl-2">
+                  <span class="truncate">{{ line.item.name }}</span>
+                  <span class="font-mono text-slate-500 shrink-0">{{ line.quantity }} {{ line.item.unit }}</span>
+                </li>
+                {% endfor %}
+              </ul>
+              <div class="text-[11px] text-slate-400 mt-1.5">{{ r.purpose }}</div>
+              {% if r.is_returnable %}
+                <div class="text-[11px] text-slate-400 mt-0.5">Returnable asset loan included</div>
+              {% endif %}
+            {% else %}
+              <div class="font-medium text-slate-900">{{ r.item.name }}</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">{{ r.purpose }}</div>
+              {% if r.is_returnable %}
+                <div class="text-[11px] text-slate-400 mt-0.5">Returnable asset • Due {{ r.line_items[0].expected_return_date or 'on completion' }}</div>
+              {% endif %}
             {% endif %}
           </td>
           <td class="py-3 px-4 align-top text-right font-medium text-slate-900 tabular-nums whitespace-nowrap">
-            {{ r.quantity }} <span class="text-slate-400 font-normal">{{ r.item.unit }}</span>
+            {% if r.item_count > 1 %}
+              <span class="font-semibold text-slate-800">{{ r.quantity }}</span> <span class="text-slate-400 font-normal">total</span>
+              <div class="text-[10px] text-slate-400">({{ r.item_count }} items)</div>
+            {% else %}
+              {{ r.quantity }} <span class="text-slate-400 font-normal">{{ r.item.unit }}</span>
+            {% endif %}
           </td>
           <td class="py-3 px-4 align-top whitespace-nowrap text-xs">
             {% if r.status == 'PENDING_APPROVAL' %}
@@ -84,8 +108,8 @@
                 <span>Pending Approval</span>
               </div>
             {% elif r.status == 'APPROVED' %}
-              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-700 bg-slate-800 text-white font-medium">
-                <svg class="w-3 h-3 text-slate-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke-width="2.2"/></svg>
+              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 font-medium">
+                <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke-width="2.2"/></svg>
                 <span>Approved</span>
               </div>
             {% elif r.status == 'ISSUED' %}
@@ -109,14 +133,14 @@
             {% if r.status == 'PENDING_APPROVAL' and current_user.role == 'SUPERVISOR' %}
               <form action="/requisitions/{{ r.id }}/approve" method="post" class="inline">
                 <input type="hidden" name="supervisor_remarks" value="Approved" />
-                <button type="submit" name="decision" value="APPROVE" class="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-medium">
+                <button type="submit" name="decision" value="APPROVE" class="px-2.5 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold transition-colors shadow-xs">
                   Approve
                 </button>
                 <button type="submit" name="decision" value="REJECT" class="px-2 py-1 rounded border border-slate-300 hover:bg-slate-50 text-slate-600 text-[11px] font-medium">
                   Decline
                 </button>
               </form>
-            {% elif r.status == 'PENDING_APPROVAL' and r.requester_id == current_user.id %}
+            {% elif r.status == 'PENDING_APPROVAL' and (r.requester_id == current_user.id or r.requester.id == current_user.id) %}
               <form action="/requisitions/{{ r.id }}/cancel" method="post" class="inline" onsubmit="return confirm('Cancel this pending requisition?');">
                 <button type="submit" class="px-2 py-1 rounded border border-slate-200 hover:bg-red-50 hover:text-red-700 hover:border-red-200 text-slate-600 text-[11px] font-medium transition-colors">
                   Cancel
@@ -157,72 +181,138 @@
 
 <!-- Modal: New Staff Requisition -->
 <div id="newReqModal" class="{% if not request.query_params.get('new') and not request.query_params.get('item_id') %}hidden{% endif %} fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex justify-center items-start pt-6 sm:pt-10 pb-8 px-3 sm:px-4 overflow-y-auto">
-  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-2xl max-w-md w-full flex flex-col max-h-[calc(100vh-3.5rem)] max-h-[calc(100dvh-3.5rem)] overflow-hidden">
+  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-2xl max-w-xl w-full flex flex-col max-h-[calc(100vh-3.5rem)] max-h-[calc(100dvh-3.5rem)] overflow-hidden">
     <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
-      <h3 class="text-sm font-semibold text-slate-900">New Stores Requisition (SIV)</h3>
+      <div>
+        <h3 class="text-sm font-semibold text-slate-900">New Stores Issue Requisition</h3>
+        <p class="text-[11px] text-slate-500 mt-0.5">Order one or multiple items under a single SIV Voucher &amp; Work Order.</p>
+      </div>
       <button type="button" onclick="closeModal('newReqModal')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
     </div>
     <form action="/requisitions/create" method="post" class="flex flex-col flex-1 min-h-0 overflow-hidden">
-      <div class="p-5 space-y-3.5 text-xs overflow-y-auto flex-1">
-        <div>
-          <label class="block font-medium text-slate-700 mb-1">Select Item</label>
-          <select name="item_id" required class="w-full h-9 rounded-md border border-slate-300 px-2.5 bg-white">
-            {% for it in items %}
-              <option value="{{ it.id }}" {% if request.query_params.get('item_id') == it.id|string %}selected{% endif %}>
-                [{{ it.item_code }}] {{ it.name }} ({{ it.quantity_on_hand }} {{ it.unit }})
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
+      <div class="p-5 space-y-4 text-xs overflow-y-auto flex-1">
+        <!-- Work Order / Reference & Operational Purpose -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block font-medium text-slate-700 mb-1">Quantity</label>
-            <input type="number" name="quantity" value="1" min="1" required class="w-full h-9 rounded-md border border-slate-300 px-3" />
+            <label class="block font-medium text-slate-700 mb-1">Work Order / Job Card Ref</label>
+            <input type="text" name="job_card_ref" placeholder="e.g. WO-412 / PM-GEN-04" class="w-full h-9 rounded-md border border-slate-300 px-3 bg-white" />
           </div>
           <div>
-            <label class="block font-medium text-slate-700 mb-1">Work Order / Ref</label>
-            <input type="text" name="job_card_ref" placeholder="e.g. WO-412" class="w-full h-9 rounded-md border border-slate-300 px-3" />
+            <label class="block font-medium text-slate-700 mb-1">Returnable Asset Loan?</label>
+            <div class="flex items-center gap-2 h-9">
+              <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-700">
+                <input type="checkbox" name="is_returnable" id="reqReturnableCheck" class="rounded border-slate-300" onchange="toggleReturnDateField(this)" />
+                <span>Yes, items to be returned</span>
+              </label>
+            </div>
           </div>
         </div>
+
+        <div id="expectedReturnDateContainer" class="hidden">
+          <label class="block font-medium text-slate-700 mb-1">Expected Return Date</label>
+          <input type="date" name="expected_return_date" class="w-full h-8 rounded-md border border-slate-300 px-2 text-xs" />
+        </div>
+
         <div>
           <label class="block font-medium text-slate-700 mb-1">
-            Reason for Request / Operational Use <span class="text-slate-400 font-normal">(Printed on official SIV PDF)</span>
+            Reason for Request / Operational Use <span class="text-slate-400 font-normal">(Printed on official SIV Voucher)</span>
           </label>
           <textarea
             name="purpose"
             required
-            rows="3"
+            rows="2"
             placeholder="e.g. Turbine Hall routine maintenance inspection, Switchyard cabling, or IT department replacement"
             class="w-full rounded-md border border-slate-300 p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#00529B] focus:ring-1 focus:ring-[#00529B]"
           ></textarea>
         </div>
-        <div class="grid grid-cols-2 gap-3 items-center pt-1">
-          <label class="inline-flex items-center gap-2 cursor-pointer text-slate-700">
-            <input type="checkbox" name="is_returnable" class="rounded border-slate-300" />
-            <span>Returnable asset loan</span>
-          </label>
-          <div>
-            <input type="date" name="expected_return_date" class="w-full h-8 rounded-md border border-slate-300 px-2 text-xs" />
+
+        <!-- Items to Order Container -->
+        <div class="border-t border-slate-200 pt-3">
+          <div class="flex items-center justify-between mb-2">
+            <label class="block font-semibold text-slate-800 text-xs">Line Items to Requisition</label>
+            <button
+              type="button"
+              onclick="addRequisitionItemRow()"
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-[#00529B]/30 bg-[#00529B]/5 hover:bg-[#00529B]/10 text-[#00529B] text-[11px] font-semibold transition cursor-pointer"
+            >
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              <span>+ Add Item</span>
+            </button>
+          </div>
+
+          <div id="requisitionItemsContainer" class="space-y-2.5">
+            <!-- First Line Item Row -->
+            <div class="requisition-item-row p-2.5 rounded-md border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div class="flex-1 min-w-0">
+                <label class="block text-[11px] font-medium text-slate-600 mb-1 sm:hidden">Item</label>
+                <select name="item_ids" required class="w-full h-9 rounded-md border border-slate-300 px-2.5 bg-white text-xs">
+                  {% for it in items %}
+                    <option value="{{ it.id }}" {% if request.query_params.get('item_id') == it.id|string %}selected{% endif %}>
+                      [{{ it.item_code }}] {{ it.name }} ({{ it.quantity_on_hand }} {{ it.unit }} in stock)
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="w-full sm:w-28 shrink-0 flex items-center gap-2">
+                <div class="flex-1">
+                  <label class="block text-[11px] font-medium text-slate-600 mb-1 sm:hidden">Qty</label>
+                  <input type="number" name="quantities" value="1" min="1" required placeholder="Qty" class="w-full h-9 rounded-md border border-slate-300 px-2.5 text-center text-xs bg-white" />
+                </div>
+                <button
+                  type="button"
+                  onclick="removeRequisitionItemRow(this)"
+                  title="Remove item"
+                  class="h-9 w-9 inline-flex items-center justify-center rounded border border-slate-200 hover:bg-red-50 hover:text-red-600 text-slate-400 transition shrink-0 cursor-pointer"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Items Template for cloning -->
+          <template id="requisitionRowTemplate">
+            <div class="requisition-item-row p-2.5 rounded-md border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div class="flex-1 min-w-0">
+                <label class="block text-[11px] font-medium text-slate-600 mb-1 sm:hidden">Item</label>
+                <select name="item_ids" required class="w-full h-9 rounded-md border border-slate-300 px-2.5 bg-white text-xs">
+                  {% for it in items %}
+                    <option value="{{ it.id }}">
+                      [{{ it.item_code }}] {{ it.name }} ({{ it.quantity_on_hand }} {{ it.unit }} in stock)
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="w-full sm:w-28 shrink-0 flex items-center gap-2">
+                <div class="flex-1">
+                  <label class="block text-[11px] font-medium text-slate-600 mb-1 sm:hidden">Qty</label>
+                  <input type="number" name="quantities" value="1" min="1" required placeholder="Qty" class="w-full h-9 rounded-md border border-slate-300 px-2.5 text-center text-xs bg-white" />
+                </div>
+                <button
+                  type="button"
+                  onclick="removeRequisitionItemRow(this)"
+                  title="Remove item"
+                  class="h-9 w-9 inline-flex items-center justify-center rounded border border-slate-200 hover:bg-red-50 hover:text-red-600 text-slate-400 transition shrink-0 cursor-pointer"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+            </div>
+          </template>
+
+          <div class="flex items-center justify-between text-[11px] text-slate-500 mt-2.5 px-1">
+            <span id="requisitionItemsSummary" class="font-medium text-slate-700">1 item in this requisition</span>
+            <span class="text-slate-400">All items will share 1 SIV Voucher</span>
           </div>
         </div>
       </div>
       <div class="px-5 py-3 border-t border-slate-200 bg-slate-50/80 flex justify-end gap-2 shrink-0">
-        <button type="button" onclick="closeModal('newReqModal')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-100">Cancel</button>
-        <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] hover:bg-[#003d75] text-white font-medium">Submit Requisition</button>
+        <button type="button" onclick="closeModal('newReqModal')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-100 cursor-pointer">Cancel</button>
+        <button type="submit" class="h-8 px-4 rounded-md bg-[#00529B] hover:bg-[#003d75] text-white font-medium shadow-xs cursor-pointer">Submit Requisition</button>
       </div>
     </form>
   </div>
 </div>
 
-<script>
-  // Ensure that if modal was auto-opened via query param, body scroll is locked
-  document.addEventListener('DOMContentLoaded', () => {
-    const m = document.getElementById('newReqModal');
-    if (m && !m.classList.contains('hidden')) {
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-    }
-  });
-</script>
 
 {% endblock %}

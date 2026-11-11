@@ -51,7 +51,7 @@ def seed_database(db: Session, force: bool = False):
             "code": "HSE",
             "name": "Health, Safety & Environment (HSE)",
             "location": "Safety Block, Kpong GS, Akuse",
-            "head_of_dept": "Mr. Francis Boadi",
+            "head_of_dept": "Francis Boadi",
         },
         {
             "code": "HOSP",
@@ -63,7 +63,7 @@ def seed_database(db: Session, force: bool = False):
             "code": "STORES",
             "name": "Procurement, Finance & Technical Stores",
             "location": "Central Warehouse, Akuse",
-            "head_of_dept": "Mrs. Comfort Adjei",
+            "head_of_dept": "Comfort Adjei",
         },
     ]
 
@@ -221,7 +221,7 @@ def seed_database(db: Session, force: bool = False):
         # Stores & Procurement
         {
             "staff_id": "VRA-AK-1401",
-            "full_name": "Mrs. Comfort Adjei",
+            "full_name": "Comfort Adjei",
             "email": "comfort.adjei@vra.com",
             "phone": "024-330-9944",
             "role": "SUPERVISOR",
