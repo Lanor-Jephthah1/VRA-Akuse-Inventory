@@ -145,9 +145,9 @@ function initCustomSelects() {
 
       const rect = btn.getBoundingClientRect();
       const menu = document.createElement('div');
-      menu.className = 'fixed z-[100050] bg-white border border-slate-200 rounded-lg shadow-2xl py-1 pb-3 text-xs overflow-y-auto ring-1 ring-slate-900/10';
+      menu.className = 'fixed z-[100050] bg-white border border-slate-200 rounded-lg shadow-2xl py-1 pb-2 text-xs overflow-y-auto ring-1 ring-slate-900/10';
 
-      const menuWidth = Math.min(Math.max(rect.width, 210), window.innerWidth - 20);
+      const menuWidth = Math.min(Math.max(rect.width, 320), window.innerWidth - 20);
       let leftPos = rect.left;
       if (leftPos + menuWidth > window.innerWidth - 10) {
         leftPos = Math.max(10, window.innerWidth - menuWidth - 10);
@@ -160,19 +160,52 @@ function initCustomSelects() {
 
       if (spaceBelow < 180 && spaceAbove > spaceBelow) {
         menu.style.bottom = `${window.innerHeight - rect.top + 4}px`;
-        menu.style.maxHeight = `${Math.max(120, Math.min(spaceAbove, 260))}px`;
+        menu.style.maxHeight = `${Math.max(140, Math.min(spaceAbove, 320))}px`;
       } else {
         menu.style.top = `${rect.bottom + 4}px`;
-        menu.style.maxHeight = `${Math.max(120, Math.min(spaceBelow, 260))}px`;
+        menu.style.maxHeight = `${Math.max(140, Math.min(spaceBelow, 320))}px`;
+      }
+
+      // Live search filter input for long select dropdowns (e.g. catalog items)
+      let searchInput = null;
+      if (select.options.length > 5) {
+        const searchBox = document.createElement('div');
+        searchBox.className = 'sticky top-0 bg-white border-b border-slate-200 px-2.5 py-2 z-20 shadow-2xs';
+        searchBox.innerHTML = `
+          <div class="relative">
+            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" placeholder="Type to filter item name or code..." class="dd-search-input w-full h-8 pl-8 pr-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#00529B] focus:ring-1 focus:ring-[#00529B]" />
+          </div>
+        `;
+        searchBox.addEventListener('click', (ev) => ev.stopPropagation());
+        menu.appendChild(searchBox);
+        searchInput = searchBox.querySelector('.dd-search-input');
       }
 
       Array.from(select.options).forEach((opt, idx) => {
         const item = document.createElement('button');
         item.type = 'button';
         const isSelected = idx === select.selectedIndex;
-        item.className = `w-full px-3 py-2 text-left flex items-center justify-between gap-2 transition-colors ${isSelected ? 'bg-slate-100/90 font-semibold text-[#00529B]' : 'text-slate-700 hover:bg-slate-50'}`;
-        item.innerHTML = `<span class="leading-snug break-words">${opt.textContent.trim()}</span>` +
-          (isSelected ? `<svg class="w-3.5 h-3.5 text-[#00529B] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7"/></svg>` : '');
+        item.className = `dd-item-btn w-full px-3 py-2 text-left flex items-center justify-between gap-2 transition-colors ${isSelected ? 'bg-slate-100/90 font-semibold text-[#00529B]' : 'text-slate-700 hover:bg-slate-50'}`;
+        
+        const code = opt.getAttribute('data-code');
+        const name = opt.getAttribute('data-name');
+        const stock = opt.getAttribute('data-stock');
+        const unit = opt.getAttribute('data-unit') || '';
+
+        if (code && name) {
+          item.innerHTML = `
+            <div class="min-w-0 pr-2">
+              <div class="truncate leading-tight text-slate-800"><span class="font-mono text-[11px] text-slate-500 font-semibold">[${code}]</span> ${name}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">${stock} ${unit} in stock</div>
+            </div>
+          ` + (isSelected ? `<svg class="w-3.5 h-3.5 text-[#00529B] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7"/></svg>` : '');
+          item.setAttribute('data-search-text', `${code} ${name} ${opt.textContent}`.toLowerCase());
+        } else {
+          item.innerHTML = `<span class="leading-snug break-words">${opt.textContent.trim()}</span>` +
+            (isSelected ? `<svg class="w-3.5 h-3.5 text-[#00529B] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7"/></svg>` : '');
+          item.setAttribute('data-search-text', opt.textContent.trim().toLowerCase());
+        }
 
         item.addEventListener('click', (ev) => {
           ev.stopPropagation();
@@ -184,6 +217,41 @@ function initCustomSelects() {
         });
         menu.appendChild(item);
       });
+
+      if (searchInput) {
+        searchInput.addEventListener('input', (ev) => {
+          const term = ev.target.value.trim().toLowerCase();
+          let count = 0;
+          menu.querySelectorAll('.dd-item-btn').forEach(b => {
+            const txt = b.getAttribute('data-search-text') || '';
+            const match = !term || txt.includes(term);
+            b.style.display = match ? 'flex' : 'none';
+            if (match) count++;
+          });
+          let emptyNotice = menu.querySelector('.dd-empty-notice');
+          if (count === 0) {
+            if (!emptyNotice) {
+              emptyNotice = document.createElement('div');
+              emptyNotice.className = 'dd-empty-notice py-4 px-3 text-center text-xs text-slate-400';
+              emptyNotice.textContent = 'No matching items found.';
+              menu.appendChild(emptyNotice);
+            }
+            emptyNotice.style.display = 'block';
+          } else if (emptyNotice) {
+            emptyNotice.style.display = 'none';
+          }
+        });
+
+        searchInput.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            const first = Array.from(menu.querySelectorAll('.dd-item-btn')).find(b => b.style.display !== 'none');
+            if (first) first.click();
+          }
+        });
+
+        setTimeout(() => searchInput.focus(), 30);
+      }
 
       document.body.appendChild(menu);
       activeDropdownMenu = menu;
@@ -425,27 +493,45 @@ function validateRequisitionRow(el) {
   if (isNaN(qty) || rawVal === '' || qty < 1) {
     qtyInput.classList.add('border-amber-400', 'focus:ring-amber-200');
     qtyInput.classList.remove('border-rose-500', 'text-rose-700', 'bg-rose-50/30', 'border-slate-300');
-    feedback.className = 'req-row-feedback text-[11px] p-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 flex items-center gap-1.5';
-    feedback.innerHTML = `<svg class="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><span>Please enter a requested quantity of 1 or more (Max available: <strong>${stock} ${unit}</strong>).</span>`;
+    feedback.className = 'req-row-feedback text-[11px] px-3 py-1.5 rounded border border-amber-200 bg-amber-50/70 text-amber-900 flex items-center gap-2';
+    feedback.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span><span>Enter requested quantity &bull; Available balance: <strong>${stock} ${unit}</strong></span>`;
     feedback.classList.remove('hidden');
   } else if (qty > stock) {
-    // EXCEEDS STOCK! (The user's exact issue shown in screenshot)
+    // Exceeds stock limit
     qtyInput.classList.add('border-rose-500', 'text-rose-700', 'bg-rose-50/30', 'focus:ring-rose-200');
     qtyInput.classList.remove('border-slate-300', 'border-amber-400');
-    feedback.className = 'req-row-feedback text-[11px] p-2 rounded-md bg-rose-50 border border-rose-200 text-rose-800 flex items-start gap-2';
-    feedback.innerHTML = `<svg class="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><div><span class="font-semibold">Insufficient Store Stock:</span> You entered <strong>${qty} ${unit}</strong>, but only <strong>${stock} ${unit}</strong> are currently available in stores for <em>${code}</em>. Please enter <strong>${stock}</strong> or fewer.</div>`;
+    feedback.className = 'req-row-feedback text-[11px] px-3 py-1.5 rounded border border-rose-200 bg-rose-50 text-rose-900 flex items-center justify-between gap-2';
+    feedback.innerHTML = `
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="w-1.5 h-1.5 rounded-full bg-rose-600 shrink-0"></span>
+        <span class="truncate">Stock limit exceeded &bull; Available balance: <strong>${stock} ${unit}</strong></span>
+      </div>
+      <button type="button" onclick="setRowQtyToMax(this, ${stock})" class="shrink-0 text-[11px] font-semibold text-[#00529B] hover:text-[#003d75] hover:underline cursor-pointer">
+        Set to max (${stock})
+      </button>
+    `;
     feedback.classList.remove('hidden');
   } else {
     // Valid quantity within stock limit
     qtyInput.classList.remove('border-rose-500', 'text-rose-700', 'bg-rose-50/30', 'border-amber-400');
     qtyInput.classList.add('border-slate-300');
     const remaining = stock - qty;
-    feedback.className = 'req-row-feedback text-[11px] px-2.5 py-1.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1.5';
-    feedback.innerHTML = `<svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7"/></svg><span>Available in store: <strong>${stock} ${unit}</strong> (${remaining} ${unit} will remain in store).</span>`;
+    feedback.className = 'req-row-feedback text-[11px] px-3 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 flex items-center gap-2';
+    feedback.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span><span>Store balance: <strong>${stock} ${unit}</strong> (${remaining} ${unit} remaining after issue)</span>`;
     feedback.classList.remove('hidden');
   }
 
   updateRequisitionFormSubmitState();
+}
+
+function setRowQtyToMax(btn, maxQty) {
+  const row = btn.closest('.requisition-item-row');
+  if (!row) return;
+  const qtyInput = row.querySelector('input[name="quantities"]');
+  if (qtyInput) {
+    qtyInput.value = maxQty;
+    validateRequisitionRow(qtyInput);
+  }
 }
 
 function updateRequisitionFormSubmitState() {
