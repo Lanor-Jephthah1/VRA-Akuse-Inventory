@@ -1,0 +1,60 @@
+body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    }
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+
+    /* Refined Enterprise Animations */
+    @keyframes pageEnter {
+      0% {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      100% {
+        opacity: 1;
+        transform: none;
+      }
+    }
+    @keyframes modalScaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96) translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.35); opacity: 0.65; }
+    }
+    .animate-page {
+      animation: pageEnter 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .modal-panel {
+      animation: modalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .status-dot-pulse {
+      animation: pulseDot 2.2s ease-in-out infinite;
+    }
+    /* Crisp card & row hover elevation */
+    .corp-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+      transition: box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .corp-card-hover:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.06);
+      transform: translateY(-1px);
+    }
+    tbody tr {
+      transition: background-color 0.14s ease;
+    }
+    .nav-item {
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }

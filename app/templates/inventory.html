@@ -163,121 +163,125 @@
 </div>
 
 <!-- Modal 1: Receive Stock (SRV) -->
-<div id="srvModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-2xl max-w-md w-full max-h-[85vh] max-h-[85dvh] overflow-y-auto my-auto flex flex-col">
-    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10 shrink-0">
+<div id="srvModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex justify-center items-start pt-6 sm:pt-10 pb-8 px-3 sm:px-4 overflow-y-auto">
+  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-2xl max-w-md w-full flex flex-col max-h-[calc(100vh-3.5rem)] max-h-[calc(100dvh-3.5rem)] overflow-hidden">
+    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
       <h3 class="text-sm font-semibold text-slate-900">Receive Store Stock (SRV)</h3>
       <button type="button" onclick="closeModal('srvModal')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
     </div>
-    <form action="/inventory/restock" method="post" class="p-5 space-y-3.5 text-xs">
-      <div>
-        <label class="block font-medium text-slate-700 mb-1">Select Item</label>
-        <select name="item_id" required class="w-full h-9 rounded-md border border-slate-300 px-2.5 bg-white">
-          {% for it in items %}
-            <option value="{{ it.id }}">[{{ it.item_code }}] {{ it.name }} (Bal: {{ it.quantity_on_hand }})</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
+    <form action="/inventory/restock" method="post" class="flex flex-col flex-1 min-h-0 overflow-hidden">
+      <div class="p-5 space-y-3.5 text-xs overflow-y-auto flex-1">
         <div>
-          <label class="block font-medium text-slate-700 mb-1">SRV / Waybill No.</label>
-          <input type="text" name="voucher_no" required placeholder="SRV-AK-2026-0092" class="w-full h-9 rounded-md border border-slate-300 px-3" />
+          <label class="block font-medium text-slate-700 mb-1">Select Item</label>
+          <select name="item_id" required class="w-full h-9 rounded-md border border-slate-300 px-2.5 bg-white">
+            {% for it in items %}
+              <option value="{{ it.id }}">[{{ it.item_code }}] {{ it.name }} (Bal: {{ it.quantity_on_hand }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">SRV / Waybill No.</label>
+            <input type="text" name="voucher_no" required placeholder="SRV-AK-2026-0092" class="w-full h-9 rounded-md border border-slate-300 px-3" />
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Quantity Received</label>
+            <input type="number" name="quantity_added" min="1" value="5" required class="w-full h-9 rounded-md border border-slate-300 px-3" />
+          </div>
         </div>
         <div>
-          <label class="block font-medium text-slate-700 mb-1">Quantity Received</label>
-          <input type="number" name="quantity_added" min="1" value="5" required class="w-full h-9 rounded-md border border-slate-300 px-3" />
+          <label class="block font-medium text-slate-700 mb-1">Supplier / Source Store</label>
+          <input type="text" name="supplier" required placeholder="VRA Central Stores Tema" class="w-full h-9 rounded-md border border-slate-300 px-3" />
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Inspection Note</label>
+          <input type="text" name="reference_note" placeholder="Optional delivery note" class="w-full h-9 rounded-md border border-slate-300 px-3" />
         </div>
       </div>
-      <div>
-        <label class="block font-medium text-slate-700 mb-1">Supplier / Source Store</label>
-        <input type="text" name="supplier" required placeholder="VRA Central Stores Tema" class="w-full h-9 rounded-md border border-slate-300 px-3" />
-      </div>
-      <div>
-        <label class="block font-medium text-slate-700 mb-1">Inspection Note</label>
-        <input type="text" name="reference_note" placeholder="Optional delivery note" class="w-full h-9 rounded-md border border-slate-300 px-3" />
-      </div>
-      <div class="pt-2 flex justify-end gap-2">
-        <button type="button" onclick="closeModal('srvModal')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
-        <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] text-white font-medium">Record SRV</button>
+      <div class="px-5 py-3 border-t border-slate-200 bg-slate-50/80 flex justify-end gap-2 shrink-0">
+        <button type="button" onclick="closeModal('srvModal')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-100">Cancel</button>
+        <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] hover:bg-[#003d75] text-white font-medium">Record SRV</button>
       </div>
     </form>
   </div>
 </div>
 
 <!-- Modal 2: Register New Item -->
-<div id="newItemModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-2xl max-w-lg w-full max-h-[85vh] max-h-[85dvh] overflow-y-auto my-auto flex flex-col">
-    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10 shrink-0">
+<div id="newItemModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex justify-center items-start pt-6 sm:pt-10 pb-8 px-3 sm:px-4 overflow-y-auto">
+  <div class="modal-panel bg-white border border-slate-200 rounded-lg shadow-2xl max-w-lg w-full flex flex-col max-h-[calc(100vh-3.5rem)] max-h-[calc(100dvh-3.5rem)] overflow-hidden">
+    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
       <h3 class="text-sm font-semibold text-slate-900">Register New Catalog Item</h3>
       <button type="button" onclick="closeModal('newItemModal')" class="text-slate-400 hover:text-slate-600 text-sm">&times;</button>
     </div>
-    <form action="/inventory/add" method="post" class="p-5 space-y-3 text-xs overflow-y-auto">
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div>
-          <label class="block font-medium text-slate-700 mb-1">Item Code</label>
-          <input type="text" name="item_code" required placeholder="VRA-MIS-008" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+    <form action="/inventory/add" method="post" class="flex flex-col flex-1 min-h-0 overflow-hidden">
+      <div class="p-5 space-y-3 text-xs overflow-y-auto flex-1">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Item Code</label>
+            <input type="text" name="item_code" required placeholder="VRA-MIS-008" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block font-medium text-slate-700 mb-1">Item Name</label>
+            <input type="text" name="name" required placeholder="Item description" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+          </div>
         </div>
-        <div class="sm:col-span-2">
-          <label class="block font-medium text-slate-700 mb-1">Item Name</label>
-          <input type="text" name="name" required placeholder="Item description" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Department</label>
+            <select name="department_id" class="w-full h-8 rounded-md border border-slate-300 px-2 bg-white">
+              {% for d in departments %}
+                <option value="{{ d.id }}">{{ d.code }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Classification</label>
+            <select name="item_type" class="w-full h-8 rounded-md border border-slate-300 px-2 bg-white">
+              <option value="CONSUMABLE">Consumable</option>
+              <option value="ASSET">Fixed Asset</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Category</label>
+            <input type="text" name="category" value="IT & Networking" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Brand / Model</label>
+            <input type="text" name="brand_model" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Serial / Part No.</label>
+            <input type="text" name="serial_or_part_no" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">VRA Asset Tag</label>
+            <input type="text" name="vra_asset_tag" placeholder="Optional" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Opening Qty</label>
+            <input type="number" name="quantity_on_hand" value="10" min="0" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Unit</label>
+            <input type="text" name="unit" value="pcs" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Reorder Level</label>
+            <input type="number" name="reorder_level" value="4" min="0" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Shelf / Bin</label>
+            <input type="text" name="store_location" value="MIS Store A1" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
+          </div>
         </div>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div>
-          <label class="block font-medium text-slate-700 mb-1">Department</label>
-          <select name="department_id" class="w-full h-8 rounded-md border border-slate-300 px-2 bg-white">
-            {% for d in departments %}
-              <option value="{{ d.id }}">{{ d.code }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <label class="block font-medium text-slate-700 mb-1">Classification</label>
-          <select name="item_type" class="w-full h-8 rounded-md border border-slate-300 px-2 bg-white">
-            <option value="CONSUMABLE">Consumable</option>
-            <option value="ASSET">Fixed Asset</option>
-          </select>
-        </div>
-        <div>
-          <label class="block font-medium text-slate-700 mb-1">Category</label>
-          <input type="text" name="category" value="IT & Networking" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
-        </div>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div>
-          <label class="block font-medium text-slate-700 mb-1">Brand / Model</label>
-          <input type="text" name="brand_model" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
-        </div>
-        <div>
-          <label class="block font-medium text-slate-700 mb-1">Serial / Part No.</label>
-          <input type="text" name="serial_or_part_no" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
-        </div>
-        <div>
-          <label class="block font-medium text-slate-700 mb-1">VRA Asset Tag</label>
-          <input type="text" name="vra_asset_tag" placeholder="Optional" class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
-        </div>
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div>
-          <label class="block font-medium text-slate-700 mb-1">Opening Qty</label>
-          <input type="number" name="quantity_on_hand" value="10" min="0" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
-        </div>
-        <div>
-          <label class="block font-medium text-slate-700 mb-1">Unit</label>
-          <input type="text" name="unit" value="pcs" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
-        </div>
-        <div>
-          <label class="block font-medium text-slate-700 mb-1">Reorder Level</label>
-          <input type="number" name="reorder_level" value="4" min="0" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
-        </div>
-        <div>
-          <label class="block font-medium text-slate-700 mb-1">Shelf / Bin</label>
-          <input type="text" name="store_location" value="MIS Store A1" required class="w-full h-8 rounded-md border border-slate-300 px-2.5" />
-        </div>
-      </div>
-      <div class="pt-2 flex justify-end gap-2">
-        <button type="button" onclick="closeModal('newItemModal')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700">Cancel</button>
-        <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] text-white font-medium">Save Item</button>
+      <div class="px-5 py-3 border-t border-slate-200 bg-slate-50/80 flex justify-end gap-2 shrink-0">
+        <button type="button" onclick="closeModal('newItemModal')" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-100">Cancel</button>
+        <button type="submit" class="h-8 px-3.5 rounded-md bg-[#00529B] hover:bg-[#003d75] text-white font-medium">Save Item</button>
       </div>
     </form>
   </div>

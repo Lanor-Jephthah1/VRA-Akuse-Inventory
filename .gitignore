@@ -5,8 +5,8 @@ __pycache__/
 .Python
 env/
 venv/
-.venv/
-.vercel
+.venv/.vercel
+.idea/
 *.db-journal
 
 .vercel
